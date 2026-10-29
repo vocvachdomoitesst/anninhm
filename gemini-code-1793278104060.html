@@ -1,0 +1,2002 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HỆ THỐNG ÔN THI AN NINH MẠNG | CKC</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter & JetBrains Mono chuẩn công nghệ sắc nét -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            app: {
+              bg: '#090d16',        /* Nền tối sâu dịu mắt, không chói */
+              surface: '#0f172a',   /* Slate 900 */
+              card: '#1e293b',      /* Slate 800 - khối nội dung rõ ràng */
+              cardHover: '#24334a',
+              border: '#334155',    /* Slate 700 - viền sắc nét, không nhòe */
+              primary: '#0ea5e9',   /* Sky 500 */
+              primaryLight: '#38bdf8',
+              emerald: '#10b981',
+              emeraldLight: '#34d399',
+              amber: '#f59e0b',
+              rose: '#f43f5e',
+              indigo: '#6366f1',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Thanh cuộn gọn gàng, rõ ràng */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #090d16; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+    /* Animation chạy khủng long mini */
+    @keyframes dinoRun {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+    .dino-animated {
+      animation: dinoRun 0.22s infinite ease-in-out;
+    }
+
+    /* Hiệu ứng rung cảnh báo khi không bấm xác thực */
+    @keyframes shakeCard {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-6px); }
+      40%, 80% { transform: translateX(6px); }
+    }
+    .shake-active {
+      animation: shakeCard 0.3s ease-in-out 3;
+    }
+  </style>
+</head>
+<body class="bg-app-bg text-slate-200 font-sans antialiased selection:bg-sky-500 selection:text-white min-h-screen flex flex-col relative overflow-x-hidden">
+
+  <!-- ==================== 1. CLOUDFLARE TURNSTILE VERIFICATION OVERLAY ==================== -->
+  <div id="verify-overlay" class="fixed inset-0 bg-[#090d16]/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div id="verify-card" class="w-full max-w-md bg-app-surface border border-app-border rounded-2xl p-7 shadow-2xl relative transition-all duration-300">
+      
+      <!-- Cloudflare Header -->
+      <div class="flex items-center justify-between pb-5 border-b border-app-border mb-6">
+        <div class="flex items-center space-x-3">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-500 flex items-center justify-center text-white text-base shadow">
+            🛡️
+          </div>
+          <div>
+            <h3 class="text-sm font-bold tracking-wide text-white uppercase">Cao Thang Cyber Shield</h3>
+            <p class="text-xs text-slate-400 font-mono">DDoS & Procrastination Protection</p>
+          </div>
+        </div>
+        <span class="text-xs px-2.5 py-1 bg-slate-800 border border-slate-700 text-sky-400 rounded-full font-mono font-medium">Turnstile 2.0</span>
+      </div>
+
+      <div class="text-center mb-6">
+        <h2 class="text-lg font-bold text-white mb-1.5">Xác minh bạn là người muốn ôn thi!</h2>
+        <p class="text-xs text-slate-400 leading-relaxed">Kiểm tra kết nối an toàn trước khi vào ngân hàng đề thi An Ninh Mạng.</p>
+        <p class="text-xs text-amber-400 font-mono mt-2" id="verify-timeout-text">
+          Hết hạn sau: <span id="verify-timer" class="font-bold text-amber-300">5s</span> (Không ấn sẽ báo lỗi & reload)
+        </p>
+      </div>
+
+      <!-- Turnstile Checkbox Widget -->
+      <div class="bg-slate-900 border-2 border-app-border rounded-xl p-4 flex items-center justify-between hover:border-sky-500 transition-all cursor-pointer group" id="verify-box-trigger">
+        <div class="flex items-center space-x-3.5">
+          <label class="relative flex items-center cursor-pointer">
+            <input type="checkbox" id="verify-checkbox" class="sr-only peer" />
+            <div class="w-7 h-7 border-2 border-slate-500 rounded-md peer-checked:border-emerald-500 peer-checked:bg-emerald-500 flex items-center justify-center transition-all duration-150">
+              <svg id="check-icon" class="w-4 h-4 text-white hidden font-bold" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
+              </svg>
+            </div>
+          </label>
+          <span class="text-sm font-medium text-slate-200 select-none group-hover:text-sky-300 transition-colors">Tôi xác nhận quyết tâm ôn thi qua môn!</span>
+        </div>
+        <div class="text-right flex flex-col items-end">
+          <div class="flex space-x-1.5 items-center">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span class="text-[11px] text-slate-300 font-mono font-bold">CKC-SEC</span>
+          </div>
+          <span class="text-[9px] text-slate-400">Privacy • Terms</span>
+        </div>
+      </div>
+
+      <!-- Error Alert Box -->
+      <div id="verify-error-msg" class="hidden mt-4 p-3.5 rounded-xl bg-red-950/80 border border-red-500 text-red-200 text-xs font-mono flex items-center space-x-2">
+        <span class="text-base">⚠️</span>
+        <span>ERROR 403: Phát hiện dấu hiệu lười học! Hệ thống đang cưỡng chế Reload...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 2. LOADING SCREEN WITH RUNNING DINO & PING ==================== -->
+  <div id="loading-screen" class="fixed inset-0 bg-app-bg z-50 flex flex-col items-center justify-center p-6 hidden">
+    <div class="w-full max-w-lg bg-app-surface border border-app-border rounded-2xl p-8 shadow-2xl relative">
+      <!-- Terminal Header -->
+      <div class="flex items-center justify-between pb-4 border-b border-app-border mb-6">
+        <div class="flex items-center space-x-2">
+          <span class="w-3 h-3 rounded-full bg-red-500"></span>
+          <span class="w-3 h-3 rounded-full bg-amber-500"></span>
+          <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+          <span class="text-xs font-mono text-slate-400 ml-2">cyber_init_kernel.sh</span>
+        </div>
+        <div class="flex items-center space-x-2 font-mono text-xs text-emerald-400 bg-emerald-950/60 px-3 py-1 rounded-md border border-emerald-800">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span>PING: <strong id="ping-monitor" class="text-white">21</strong> ms</span>
+        </div>
+      </div>
+
+      <!-- Terminal Log -->
+      <div id="terminal-log" class="text-xs font-mono text-sky-300 h-16 flex flex-col justify-end space-y-1 overflow-hidden mb-6">
+        <div>> [INIT] Thiết lập môi trường bảo mật SSL/TLS Handshake...</div>
+      </div>
+
+      <!-- Dino Progress Bar Track Container -->
+      <div class="relative w-full pt-10 pb-2">
+        <!-- Mini Dinosaur SVG -->
+        <div id="dino-runner" class="absolute top-1 transition-all duration-100 ease-out flex flex-col items-center dino-animated pointer-events-none" style="left: 0%;">
+          <svg class="w-8 h-8 text-emerald-400 filter drop-shadow(0 2px 4px rgba(0,0,0,0.5))" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M21 2h-6v2h-2v2h-2v2H9v2H7v2H5v2H3v2H2v6h2v-2h2v-2h2v2h2v-2h2v2h2v-2h4v-2h2v-4h2V6h-2V4h-2V2zM17 6h2v2h-2V6z"/>
+          </svg>
+          <span class="text-[9px] font-mono text-sky-300 font-bold">READY</span>
+        </div>
+
+        <!-- Progress Track -->
+        <div class="w-full bg-slate-900 rounded-full h-3.5 overflow-hidden p-0.5 border border-app-border">
+          <div id="loading-bar" class="h-full bg-gradient-to-r from-sky-500 to-emerald-400 rounded-full w-0 transition-all duration-75"></div>
+        </div>
+      </div>
+
+      <!-- Progress Stats -->
+      <div class="flex items-center justify-between mt-3 font-mono text-xs">
+        <span class="text-slate-400">Đang giải nén bộ đề thi CKC...</span>
+        <span id="loading-pct" class="text-sky-400 font-bold text-sm">0%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MAIN APPLICATION ==================== -->
+  <div id="main-app" class="relative z-10 flex flex-col min-h-screen opacity-0 transition-opacity duration-500">
+
+    <!-- TOP MOTIVATION / ROAST BANNER TICKER -->
+    <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border-b border-app-border py-2.5 px-4 overflow-hidden relative shadow">
+      <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between text-xs gap-2">
+        <div class="flex items-center space-x-2 font-mono">
+          <span class="px-2.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40 text-[10px] font-bold uppercase tracking-wider">🔥 LỜI NHẮC</span>
+          <span class="text-slate-500 hidden sm:inline">|</span>
+        </div>
+        <div class="flex-1 text-center font-medium text-slate-200 transition-all duration-500" id="roast-text">
+          "Firewall có thể chặn được Brute-force, nhưng không thể chặn được điểm F nếu tối nay bạn đi ngủ sớm!"
+        </div>
+        <div class="text-[11px] font-mono text-sky-400 bg-slate-950 px-2.5 py-1 rounded-full border border-slate-800 flex items-center space-x-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse"></span>
+          <span>CKC MMT K24</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- HEADER & NAVIGATION SECTION -->
+    <header class="border-b border-app-border bg-app-surface/90 backdrop-blur-md sticky top-0 z-30 shadow-md">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
+        
+        <!-- Logo & Title -->
+        <div class="flex items-center space-x-3.5 cursor-pointer" onclick="playBeep(440, 'triangle', 0.08)">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center text-white text-xl font-black shadow transform hover:scale-105 transition-transform">
+            ⚡
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <h1 class="text-base sm:text-lg font-extrabold tracking-tight text-white uppercase flex items-center gap-2">
+                HỆ THỐNG ÔN THI AN NINH MẠNG
+                <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-mono">SO4.2 / SO6.2 / SO6.1</span>
+              </h1>
+            </div>
+            <p class="text-xs text-slate-400 font-mono">ÔN TẬP VÀ THI THỬ TRONG BỘ ĐỀ CKC • CĐCNTT24MMT</p>
+          </div>
+        </div>
+
+        <!-- Tab Switcher Navigation -->
+        <nav class="flex items-center bg-slate-900 p-1.5 rounded-xl border border-app-border shadow-inner">
+          <button id="tab-btn-docs" onclick="switchTab('docs')" class="px-4 py-2 rounded-lg text-xs font-semibold transition-all flex items-center space-x-2 bg-sky-600 text-white shadow">
+            <span>📚 Cấu trúc & Đề cương</span>
+          </button>
+          <button id="tab-btn-mock" onclick="switchTab('mock')" class="px-4 py-2 rounded-lg text-xs font-semibold transition-all flex items-center space-x-2 text-slate-400 hover:text-white">
+            <span>⏱️ Phòng Thi Thử (10 Đề)</span>
+          </button>
+        </nav>
+
+        <!-- Sound Toggle Button -->
+        <button id="sound-btn" onclick="toggleMute()" class="px-3 py-2 rounded-lg bg-app-card border border-app-border text-slate-300 hover:text-white hover:border-slate-500 transition-colors text-xs font-mono flex items-center space-x-1.5" title="Bật/Tắt Âm thanh">
+          <span id="sound-icon">🔊</span>
+          <span class="hidden md:inline">AUDIO ON</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- COUNTDOWN BANNER (09:00:00 06/11/2026) -->
+    <section class="bg-gradient-to-b from-app-surface to-app-bg py-6 px-4 border-b border-app-border">
+      <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+        <div>
+          <div class="inline-flex items-center space-x-2 text-xs font-mono text-sky-400 bg-sky-950/70 px-3 py-1 rounded-full border border-sky-800/60 mb-2">
+            <span class="w-2 h-2 rounded-full bg-sky-400 animate-pulse"></span>
+            <span>MỤC TIÊU KỲ THI CHÍNH THỨC</span>
+          </div>
+          <h2 class="text-lg sm:text-xl font-bold text-white tracking-wide">Đếm ngược đến: <span class="text-sky-400 font-mono">09:00:00</span> Ngày <span class="text-emerald-400 font-mono">06/11/2026</span></h2>
+          <p class="text-xs text-slate-400 mt-1">Đừng để thời gian trôi qua vô nghĩa. Mỗi phút ôn luyện là 0.25 điểm trong túi bạn!</p>
+        </div>
+
+        <!-- 4 Count Boxes -->
+        <div class="grid grid-cols-4 gap-2.5 sm:gap-4 font-mono text-center">
+          <div class="bg-app-card border border-app-border rounded-xl p-3 sm:px-5 sm:py-3 shadow-md min-w-[65px] sm:min-w-[85px]">
+            <div id="cd-days" class="text-xl sm:text-3xl font-extrabold text-sky-400">--</div>
+            <div class="text-[10px] text-slate-400 uppercase tracking-wider mt-1 font-semibold">NGÀY</div>
+          </div>
+          <div class="bg-app-card border border-app-border rounded-xl p-3 sm:px-5 sm:py-3 shadow-md min-w-[65px] sm:min-w-[85px]">
+            <div id="cd-hours" class="text-xl sm:text-3xl font-extrabold text-emerald-400">--</div>
+            <div class="text-[10px] text-slate-400 uppercase tracking-wider mt-1 font-semibold">GIỜ</div>
+          </div>
+          <div class="bg-app-card border border-app-border rounded-xl p-3 sm:px-5 sm:py-3 shadow-md min-w-[65px] sm:min-w-[85px]">
+            <div id="cd-minutes" class="text-xl sm:text-3xl font-extrabold text-amber-400">--</div>
+            <div class="text-[10px] text-slate-400 uppercase tracking-wider mt-1 font-semibold">PHÚT</div>
+          </div>
+          <div class="bg-app-card border border-app-border rounded-xl p-3 sm:px-5 sm:py-3 shadow-md min-w-[65px] sm:min-w-[85px]">
+            <div id="cd-seconds" class="text-xl sm:text-3xl font-extrabold text-rose-400">--</div>
+            <div class="text-[10px] text-slate-400 uppercase tracking-wider mt-1 font-semibold">GIÂY</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONTENT TABS -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+
+      <!-- ==================== TAB 1: CẤU TRÚC ĐỀ THI & ĐỀ CƯƠNG ÔN TẬP ==================== -->
+      <div id="tab-docs" class="space-y-8">
+        
+        <!-- EXAM STRUCTURE SPECIFICATION CARD -->
+        <div class="bg-app-surface border border-app-border rounded-2xl p-6 shadow-xl relative overflow-hidden">
+          <div class="flex flex-wrap items-center justify-between pb-4 border-b border-app-border gap-3">
+            <div>
+              <span class="text-[11px] font-mono text-sky-400 uppercase tracking-wider font-semibold">TRƯỜNG CAO ĐẲNG KỸ THUẬT CAO THẮNG • KHOA CNTT</span>
+              <h2 class="text-xl font-extrabold text-white">CẤU TRÚC ĐỀ THI TỰ LUẬN AN NINH MẠNG (90 PHÚT)</h2>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span class="px-3 py-1 bg-rose-950/70 border border-rose-600/50 text-rose-300 text-xs rounded-full font-mono font-bold">🚫 KHÔNG SỬ DỤNG TÀI LIỆU</span>
+              <span class="px-3 py-1 bg-sky-950/70 border border-sky-600/50 text-sky-300 text-xs rounded-full font-mono font-bold">TỔNG ĐIỂM: 10.0</span>
+            </div>
+          </div>
+
+          <!-- Table layout -->
+          <div class="mt-4 overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs sm:text-sm">
+              <thead>
+                <tr class="bg-slate-900 text-slate-300 font-mono border-b border-app-border">
+                  <th class="p-3 font-semibold">Câu</th>
+                  <th class="p-3 font-semibold">Nội dung chi tiết</th>
+                  <th class="p-3 font-semibold">Mức độ</th>
+                  <th class="p-3 font-semibold">Chuẩn đầu ra</th>
+                  <th class="p-3 text-right font-semibold">Thang điểm</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-app-border text-slate-300">
+                <tr class="hover:bg-slate-800/50 transition-colors">
+                  <td class="p-3.5 font-bold text-white font-mono">Câu 1</td>
+                  <td class="p-3.5 font-medium leading-relaxed">
+                    <strong class="text-white">Tổng quan, Chính sách và Đạo đức nghề nghiệp</strong><br/>
+                    <span class="text-xs text-slate-400">Đưa ra quyết định và hành xử đúng đắn dựa trên chuẩn mực đạo đức nghề nghiệp, bảo vệ thông tin mật, xử lý khi phát hiện lỗ hổng/phishing.</span>
+                  </td>
+                  <td class="p-3.5 font-mono text-slate-400">1, 2, 5</td>
+                  <td class="p-3.5"><span class="px-2.5 py-1 rounded bg-sky-950 border border-sky-800 text-sky-300 font-mono text-xs font-semibold">SO4.2</span></td>
+                  <td class="p-3.5 text-right font-extrabold text-emerald-400 font-mono text-base">3.0 đ</td>
+                </tr>
+                <tr class="hover:bg-slate-800/50 transition-colors">
+                  <td class="p-3.5 font-bold text-white font-mono">Câu 2</td>
+                  <td class="p-3.5 font-medium leading-relaxed">
+                    <strong class="text-white">Giải pháp An toàn và Thiết kế Hệ thống</strong><br/>
+                    <span class="text-xs text-slate-400">Đề xuất và xây dựng giải pháp an toàn. Áp dụng các kỹ thuật, công cụ quản lý và chính sách (Firewall, IDS/IPS, phòng chống Smishing, MITM, SQLi, xử lý mã độc coin mining).</span>
+                  </td>
+                  <td class="p-3.5 font-mono text-slate-400">3, 4</td>
+                  <td class="p-3.5"><span class="px-2.5 py-1 rounded bg-indigo-950 border border-indigo-800 text-indigo-300 font-mono text-xs font-semibold">SO6.2</span></td>
+                  <td class="p-3.5 text-right font-extrabold text-emerald-400 font-mono text-base">4.0 đ</td>
+                </tr>
+                <tr class="hover:bg-slate-800/50 transition-colors">
+                  <td class="p-3.5 font-bold text-white font-mono">Câu 3</td>
+                  <td class="p-3.5 font-medium leading-relaxed">
+                    <strong class="text-white">Bài tập tính toán trong An ninh mạng</strong><br/>
+                    <span class="text-xs text-slate-400">Phân tích bài toán định lượng: Tính băng thông & PPS Botnet DDoS (với overhead, tỷ lệ hoạt động, CDN), hoặc Không gian Brute Force mật khẩu bằng GPU có Rate-limit.</span>
+                  </td>
+                  <td class="p-3.5 font-mono text-slate-400">4</td>
+                  <td class="p-3.5"><span class="px-2.5 py-1 rounded bg-rose-950 border border-rose-800 text-rose-300 font-mono text-xs font-semibold">SO6.1</span></td>
+                  <td class="p-3.5 text-right font-extrabold text-emerald-400 font-mono text-base">3.0 đ</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- SEARCH & FILTER TOOLBAR FOR QUESTION BANK -->
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 bg-app-surface p-4 rounded-xl border border-app-border">
+          <div class="relative w-full sm:w-96">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">🔍</span>
+            <input type="text" id="theory-search" oninput="filterTheoryQuestions()" placeholder="Tìm kiếm câu hỏi, từ khóa (CIA, VPN, Botnet, SQLi...)" class="w-full pl-9 pr-4 py-2 bg-slate-900 border border-app-border rounded-lg text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500 transition-colors" />
+          </div>
+
+          <div class="flex flex-wrap items-center gap-1.5 w-full sm:w-auto">
+            <button onclick="filterChapter('all')" class="chapter-btn active px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-sky-600 text-white shadow-sm">Tất cả</button>
+            <button onclick="filterChapter('c1')" class="chapter-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-app-card text-slate-300 hover:bg-slate-700">Chương 1 (Tổng quan)</button>
+            <button onclick="filterChapter('c2')" class="chapter-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-app-card text-slate-300 hover:bg-slate-700">Chương 2 (An toàn HTM)</button>
+            <button onclick="filterChapter('c3')" class="chapter-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-app-card text-slate-300 hover:bg-slate-700">Chương 3 (Tấn công)</button>
+            <button onclick="filterChapter('c4')" class="chapter-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-app-card text-slate-300 hover:bg-slate-700">Chương 4 (Giải pháp)</button>
+          </div>
+        </div>
+
+        <!-- ACCORDION LIST -->
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-base font-bold text-white flex items-center space-x-2">
+              <span>📖 NGÂN HÀNG CÂU HỎI ĐỀ CƯƠNG VÀ ĐÁP ÁN CHI TIẾT</span>
+              <span id="question-count-badge" class="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-sky-400 font-mono font-semibold">64 câu hỏi</span>
+            </h3>
+            <button onclick="toggleAllAccordions()" class="text-xs text-sky-400 hover:underline font-mono">Mở rộng / Thu gọn tất cả</button>
+          </div>
+
+          <div id="theory-accordion-container" class="space-y-3">
+            <!-- Dynamically populated via JS -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ==================== TAB 2: PHÒNG THI THỬ CHUẨN CKC (10 ĐỀ) ==================== -->
+      <div id="tab-mock" class="hidden space-y-6">
+
+        <!-- MOCK TEST SELECTOR & CONTROL BAR -->
+        <div class="bg-app-surface border border-app-border rounded-2xl p-5 shadow-xl flex flex-col md:flex-row items-center justify-between gap-4">
+          <div class="flex items-center space-x-3 w-full md:w-auto">
+            <div class="p-2.5 bg-gradient-to-tr from-sky-600 to-indigo-600 rounded-xl text-white font-extrabold text-lg shadow">
+              📝
+            </div>
+            <div>
+              <label class="text-[11px] font-mono text-sky-400 uppercase tracking-wider block font-semibold">Chọn đề thi mô phỏng:</label>
+              <select id="mock-selector" onchange="loadSelectedMockExam()" class="mt-1 bg-slate-900 border border-app-border rounded-lg px-3 py-2 text-sm text-white font-semibold focus:outline-none focus:border-sky-400 cursor-pointer">
+                <!-- 10 Mock sets generated by JS -->
+              </select>
+            </div>
+          </div>
+
+          <!-- Exam 90 Minutes Timer & Action Buttons -->
+          <div class="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
+            <!-- Live Exam StopWatch -->
+            <div class="bg-slate-900 px-4 py-2 rounded-xl border border-app-border flex items-center space-x-3 shadow-inner">
+              <span class="text-xs text-slate-400 font-mono">THỜI GIAN LÀM BÀI:</span>
+              <span id="exam-timer" class="font-mono text-lg font-bold text-emerald-400">90:00</span>
+            </div>
+
+            <!-- Start / Pause / Reset Timer buttons -->
+            <button id="btn-timer-toggle" onclick="toggleExamTimer()" class="px-3.5 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold flex items-center space-x-1.5 transition-all shadow">
+              <span id="timer-toggle-icon">▶️</span>
+              <span id="timer-toggle-text">Bắt đầu tính giờ</span>
+            </button>
+            <button onclick="resetExamTimer()" class="px-3 py-2 rounded-lg bg-app-card hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-all border border-app-border">
+              🔄 Reset giờ
+            </button>
+            <button onclick="openSubmitModal()" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow flex items-center space-x-1">
+              <span>📤</span>
+              <span>Nộp Bài & Chấm Điểm</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- MOCK EXAM PAPER VIEW -->
+        <div class="bg-app-surface border border-app-border rounded-2xl p-6 sm:p-8 shadow-2xl relative">
+          <!-- Official Exam Header -->
+          <div class="border-b border-app-border pb-6 mb-8 text-center sm:text-left flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div>
+              <p class="text-xs font-bold uppercase tracking-wider text-slate-400">TRƯỜNG CAO ĐẲNG KỸ THUẬT CAO THẮNG</p>
+              <p class="text-xs font-bold uppercase tracking-wider text-sky-400">KHOA CÔNG NGHỆ THÔNG TIN</p>
+              <p class="text-[11px] text-slate-400 italic">Môn học: An ninh mạng • Mã lớp: CĐCNTT24MMT</p>
+            </div>
+            <div class="text-center sm:text-right border sm:border-0 border-app-border p-3 rounded-lg sm:p-0">
+              <span class="inline-block px-3 py-1 rounded bg-amber-500/10 text-amber-300 border border-amber-500/30 font-mono text-xs font-bold mb-1" id="mock-id-badge">MÃ ĐỀ: CKC-01</span>
+              <p class="text-xs text-slate-400 font-mono">Thời gian làm bài: 90 phút</p>
+              <p class="text-[11px] text-rose-400 font-medium">Hình thức: Tự luận (Không sử dụng tài liệu)</p>
+            </div>
+          </div>
+
+          <!-- Questions & Live Answer Textboxes -->
+          <div id="mock-questions-container" class="space-y-8">
+            <!-- Dynamically populated per selected mock exam -->
+          </div>
+
+        </div>
+
+      </div>
+
+    </main>
+
+    <!-- SUBMIT CONFIRMATION & DETAILED KEY MODAL -->
+    <div id="submit-modal" class="fixed inset-0 bg-[#090d16]/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+      <div class="w-full max-w-4xl max-h-[90vh] bg-app-surface border border-app-border rounded-2xl p-6 sm:p-7 shadow-2xl overflow-y-auto flex flex-col">
+        <div class="flex items-center justify-between pb-4 border-b border-app-border">
+          <div class="flex items-center space-x-2.5">
+            <span class="text-xl">🏆</span>
+            <div>
+              <h3 class="text-lg font-bold text-white">KẾT QUẢ & ĐÁP ÁN CHUẨN TỰ CHẤM ĐIỂM</h3>
+              <p class="text-xs text-slate-400 font-mono" id="modal-mock-title">Mã đề: CKC-01</p>
+            </div>
+          </div>
+          <button onclick="closeSubmitModal()" class="text-slate-400 hover:text-white p-1 rounded-lg text-lg">✕</button>
+        </div>
+
+        <!-- Student Word count stats & Self evaluation guide -->
+        <div class="my-4 p-4 rounded-xl bg-slate-900 border border-app-border text-xs flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center space-x-5">
+            <div>
+              <span class="text-slate-400 block font-mono">Tổng số từ bạn đã viết:</span>
+              <strong id="modal-word-count" class="text-base text-sky-400 font-mono">0 từ</strong>
+            </div>
+            <div class="border-l border-slate-700 pl-5">
+              <span class="text-slate-400 block font-mono">Thời gian làm bài:</span>
+              <strong id="modal-spent-time" class="text-base text-emerald-400 font-mono">0 phút</strong>
+            </div>
+          </div>
+          <div class="text-right">
+            <span class="text-xs text-amber-300 font-semibold block">Thang điểm 10.0 (3.0 + 4.0 + 3.0)</span>
+            <span class="text-[11px] text-slate-400">Hãy đối chiếu từng câu để tự cho điểm chính xác.</span>
+          </div>
+        </div>
+
+        <!-- Answers comparison container -->
+        <div id="modal-solutions-content" class="space-y-6 flex-1 pr-1">
+          <!-- Populated by JS -->
+        </div>
+
+        <div class="mt-6 pt-4 border-t border-app-border flex justify-end space-x-3">
+          <button onclick="copyMyAnswers()" class="px-4 py-2 rounded-lg bg-app-card hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center space-x-1.5 transition-colors border border-app-border">
+            <span>📋</span>
+            <span>Sao chép bài làm của tôi</span>
+          </button>
+          <button onclick="closeSubmitModal()" class="px-5 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold transition-colors shadow">
+            Đóng & Tiếp tục ôn luyện
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast-notify" class="fixed bottom-6 right-6 z-50 bg-slate-900 border border-sky-500/50 text-sky-200 text-xs font-mono px-4 py-2.5 rounded-xl shadow-xl transform translate-y-20 opacity-0 transition-all duration-300 flex items-center space-x-2">
+      <span class="text-base">🔔</span>
+      <span id="toast-message">Đã tự động lưu bài làm...</span>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="mt-auto border-t border-app-border bg-app-surface py-5 px-4 text-center text-xs text-slate-400">
+      <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+        <p class="font-mono">
+          © 2026 HỆ THỐNG ÔN THI AN NINH MẠNG • CAO THANG TECHNICAL COLLEGE
+        </p>
+        <p class="font-mono text-sky-400 hover:text-sky-300 transition-colors">
+          Thiết kế & Biên soạn: <span class="font-bold underline">@MrFice5</span>
+        </p>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- ==================== JAVASCRIPT APPLICATION LOGIC ==================== -->
+  <script>
+    /* =======================================================================
+       1. WEB AUDIO API SYNTHESIZER
+    ======================================================================= */
+    let audioCtx = null;
+    let isMuted = false;
+
+    function getAudioContext() {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function playBeep(freq = 440, type = 'sine', duration = 0.1, gainVal = 0.08) {
+      if (isMuted) return;
+      try {
+        const ctx = getAudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+
+        gain.gain.setValueAtTime(gainVal, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start();
+        osc.stop(ctx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    function playSuccessChime() {
+      if (isMuted) return;
+      const notes = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
+      notes.forEach((freq, i) => {
+        setTimeout(() => playBeep(freq, 'triangle', 0.2, 0.07), i * 80);
+      });
+    }
+
+    function playErrorBuzzer() {
+      if (isMuted) return;
+      playBeep(180, 'sawtooth', 0.35, 0.15);
+      setTimeout(() => playBeep(140, 'sawtooth', 0.4, 0.2), 120);
+    }
+
+    function toggleMute() {
+      isMuted = !isMuted;
+      const icon = document.getElementById('sound-icon');
+      const btn = document.getElementById('sound-btn');
+      if (isMuted) {
+        icon.textContent = '🔇';
+        btn.classList.add('opacity-50');
+        showToast('Đã tắt âm thanh');
+      } else {
+        icon.textContent = '🔊';
+        btn.classList.remove('opacity-50');
+        playSuccessChime();
+        showToast('Đã bật âm thanh');
+      }
+    }
+
+    /* =======================================================================
+       2. CLOUDFLARE TURNSTILE & TIMEOUT RELOAD LOGIC
+    ======================================================================= */
+    let verifySecondsLeft = 5;
+    let verifyTimerInterval = null;
+    let isVerified = false;
+
+    function initVerification() {
+      const timerDisplay = document.getElementById('verify-timer');
+      const errorMsg = document.getElementById('verify-error-msg');
+      const verifyCard = document.getElementById('verify-card');
+      const trigger = document.getElementById('verify-box-trigger');
+      const checkbox = document.getElementById('verify-checkbox');
+      const checkIcon = document.getElementById('check-icon');
+
+      verifyTimerInterval = setInterval(() => {
+        verifySecondsLeft--;
+        if (timerDisplay) timerDisplay.textContent = verifySecondsLeft + 's';
+
+        if (verifySecondsLeft <= 0 && !isVerified) {
+          clearInterval(verifyTimerInterval);
+          playErrorBuzzer();
+          errorMsg.classList.remove('hidden');
+          verifyCard.classList.add('shake-active');
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+        }
+      }, 1000);
+
+      // Trigger Click
+      trigger.addEventListener('click', () => {
+        if (isVerified) return;
+        isVerified = true;
+        clearInterval(verifyTimerInterval);
+
+        checkbox.checked = true;
+        checkIcon.classList.remove('hidden');
+        playSuccessChime();
+
+        setTimeout(() => {
+          document.getElementById('verify-overlay').style.display = 'none';
+          startLoadingScreen();
+        }, 500);
+      });
+    }
+
+    /* =======================================================================
+       3. LOADING SCREEN WITH DINO RUNNER & PING SIMULATOR
+    ======================================================================= */
+    function startLoadingScreen() {
+      const loadingScreen = document.getElementById('loading-screen');
+      const loadingBar = document.getElementById('loading-bar');
+      const dinoRunner = document.getElementById('dino-runner');
+      const loadingPct = document.getElementById('loading-pct');
+      const pingMonitor = document.getElementById('ping-monitor');
+      const terminalLog = document.getElementById('terminal-log');
+      const mainApp = document.getElementById('main-app');
+
+      loadingScreen.classList.remove('hidden');
+
+      let currentProgress = 0;
+      const logs = [
+        "> [INIT] Bắt tay SSL/TLS thành công...",
+        "> [SEC] Phân tích mô hình CIA Triad & AAA Protocol...",
+        "> [PACKET] Quét cổng Nmap -sV -p- 127.0.0.1...",
+        "> [FIREWALL] Nạp chính sách Default Deny & Screened Subnet DMZ...",
+        "> [BOTNET] Tính toán 137 Gbps DDoS & GPU Brute-force solver...",
+        "> [OK] Bộ đề thi Cao Thắng 2026 đã sẵn sàng!"
+      ];
+      let logIndex = 0;
+
+      const pingInterval = setInterval(() => {
+        const fakePing = Math.floor(Math.random() * 18) + 16; // 16ms - 34ms
+        pingMonitor.textContent = fakePing;
+      }, 350);
+
+      const progressInterval = setInterval(() => {
+        currentProgress += Math.floor(Math.random() * 5) + 3;
+        if (currentProgress > 100) currentProgress = 100;
+
+        loadingBar.style.width = currentProgress + '%';
+        dinoRunner.style.left = `calc(${currentProgress}% - 14px)`;
+        loadingPct.textContent = currentProgress + '%';
+
+        if (currentProgress % 15 === 0) {
+          playBeep(600 + currentProgress * 4, 'sine', 0.04, 0.03);
+        }
+
+        if (currentProgress >= (logIndex + 1) * 16 && logIndex < logs.length) {
+          const logDiv = document.createElement('div');
+          logDiv.textContent = logs[logIndex];
+          terminalLog.appendChild(logDiv);
+          logIndex++;
+        }
+
+        if (currentProgress >= 100) {
+          clearInterval(progressInterval);
+          clearInterval(pingInterval);
+          playSuccessChime();
+
+          setTimeout(() => {
+            loadingScreen.classList.add('transition-opacity', 'duration-500', 'opacity-0');
+            setTimeout(() => {
+              loadingScreen.style.display = 'none';
+              mainApp.classList.remove('opacity-0');
+              showToast('Chào mừng bạn đến với Hệ Thống Ôn Thi CKC!');
+            }, 400);
+          }, 300);
+        }
+      }, 55);
+    }
+
+    /* =======================================================================
+       4. MOTIVATIONAL & ROAST BANNER QUOTES
+    ======================================================================= */
+    const roastQuotes = [
+      `"Firewall có thể chặn được Brute-force, nhưng không thể chặn được điểm F nếu tối nay bạn tiếp tục lướt Reels!"`,
+      `"Lỗ hổng zero-day nguy hiểm nhất hệ thống chính là sự chủ quan: 'Thôi mai dậy sớm 5h sáng học bài'!"`,
+      `"Hacker mất 2.62 giây để crack mật khẩu, còn bạn mất 2 tiếng chỉ để tìm động lực mở tập đề cương."`,
+      `"Chúc bạn thi tốt! Hãy nhớ: Đề thi không dùng tài liệu, đừng để bản thân trở thành 'mắt xích yếu nhất'!"`,
+      `"Hệ thống sập vì SYN Flood, còn bạn sập vì không phân biệt được HIDS với NIDS!"`,
+      `"Đừng để người yêu cũ qua môn điểm A còn bạn phải đóng học phí học lại An ninh mạng kỳ hè nhé!"`,
+      `"Nguyên tắc bảo mật số 1: 'Default Deny' - Từ chối mọi cuộc rủ rê đi cà phê, đi nhậu trước ngày thi!"`
+    ];
+
+    let currentRoastIndex = 0;
+    function rotateRoastQuotes() {
+      const el = document.getElementById('roast-text');
+      setInterval(() => {
+        el.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => {
+          currentRoastIndex = (currentRoastIndex + 1) % roastQuotes.length;
+          el.textContent = roastQuotes[currentRoastIndex];
+          el.classList.remove('opacity-0', 'translate-y-2');
+        }, 400);
+      }, 7000);
+    }
+
+    /* =======================================================================
+       5. COUNTDOWN TIMER TO 09:00:00 06/11/2026
+    ======================================================================= */
+    function initOfficialCountdown() {
+      const targetDate = new Date('2026-11-06T09:00:00+07:00').getTime();
+
+      function updateClock() {
+        const now = new Date().getTime();
+        const distance = targetDate - now;
+
+        if (distance <= 0) {
+          document.getElementById('cd-days').textContent = '00';
+          document.getElementById('cd-hours').textContent = '00';
+          document.getElementById('cd-minutes').textContent = '00';
+          document.getElementById('cd-seconds').textContent = '00';
+          return;
+        }
+
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+        document.getElementById('cd-days').textContent = String(days).padStart(2, '0');
+        document.getElementById('cd-hours').textContent = String(hours).padStart(2, '0');
+        document.getElementById('cd-minutes').textContent = String(minutes).padStart(2, '0');
+        document.getElementById('cd-seconds').textContent = String(seconds).padStart(2, '0');
+      }
+
+      updateClock();
+      setInterval(updateClock, 1000);
+    }
+
+    /* =======================================================================
+       6. TAB NAVIGATION & TOAST NOTIFICATION
+    ======================================================================= */
+    function switchTab(tabId) {
+      playBeep(520, 'sine', 0.08);
+      const docsView = document.getElementById('tab-docs');
+      const mockView = document.getElementById('tab-mock');
+      const btnDocs = document.getElementById('tab-btn-docs');
+      const btnMock = document.getElementById('tab-btn-mock');
+
+      if (tabId === 'docs') {
+        docsView.classList.remove('hidden');
+        mockView.classList.add('hidden');
+
+        btnDocs.className = "px-4 py-2 rounded-lg text-xs font-semibold transition-all flex items-center space-x-2 bg-sky-600 text-white shadow";
+        btnMock.className = "px-4 py-2 rounded-lg text-xs font-semibold transition-all flex items-center space-x-2 text-slate-400 hover:text-white";
+      } else {
+        docsView.classList.add('hidden');
+        mockView.classList.remove('hidden');
+
+        btnMock.className = "px-4 py-2 rounded-lg text-xs font-semibold transition-all flex items-center space-x-2 bg-sky-600 text-white shadow";
+        btnDocs.className = "px-4 py-2 rounded-lg text-xs font-semibold transition-all flex items-center space-x-2 text-slate-400 hover:text-white";
+        loadSelectedMockExam();
+      }
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast-notify');
+      const toastMsg = document.getElementById('toast-message');
+      toastMsg.textContent = msg;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 2600);
+    }
+
+    /* =======================================================================
+       7. DATA BANK: 40 THEORY + 24 APPLIED QUESTIONS
+    ======================================================================= */
+    const theoryQuestionBank = [
+      {
+        id: "1.1",
+        chapter: "c1",
+        title: "Câu 1.1: Mô hình CIA Triad và Mối quan hệ đánh đổi (Trade-off)",
+        question: "Trình bày chi tiết 3 thành phần cốt lõi của mô hình CIA Triad. Phân tích mối quan hệ đánh đổi (trade-off) giữa các thành phần này và cho ví dụ minh họa.",
+        answer: `<strong>1. Ba thành phần cốt lõi:</strong><br/>
+        - <strong>Confidentiality (Tính bảo mật):</strong> Đảm bảo thông tin chỉ được truy cập bởi người/hệ thống có thẩm quyền. Giải pháp: Mã hóa, kiểm soát truy cập (ACL), xác thực đa yếu tố.<br/>
+        - <strong>Integrity (Tính toàn vẹn):</strong> Đảm bảo dữ liệu chính xác, không bị chỉnh sửa, chèn thêm hoặc xóa trái phép. Giải pháp: Hashing (SHA-256), chữ ký số, checksum.<br/>
+        - <strong>Availability (Tính sẵn sàng):</strong> Đảm bảo hệ thống, dữ liệu luôn sẵn sàng phục vụ khi người dùng hợp lệ cần. Giải pháp: Tường lửa, cân bằng tải, CDN, sao lưu dữ liệu, kiến trúc HA (High Availability).<br/><br/>
+        <strong>2. Mối quan hệ đánh đổi (Trade-off):</strong><br/>
+        - Khi tăng cường tối đa <em>Confidentiality</em> (ví dụ: dùng thuật toán mã hóa nhiều lớp, yêu cầu xác thực 4 bước OTP/sinh trắc học), hiệu năng hệ thống sẽ giảm, độ trễ tăng, dẫn đến <em>Availability</em> suy giảm.<br/>
+        - Ngược lại, nếu tối ưu <em>Availability</em> cực cao (cho phép mọi người truy cập nhanh, không cần kiểm tra quyền), thì <em>Confidentiality</em> và <em>Integrity</em> sẽ gặp nguy hiểm lớn.`
+      },
+      {
+        id: "1.2",
+        chapter: "c1",
+        title: "Câu 1.2: So sánh OSI và TCP/IP - Lý do TCP/IP trở thành chuẩn de facto",
+        question: "Phân biệt chi tiết mô hình OSI và TCP/IP. Tại sao TCP/IP lại trở thành chuẩn thực tế (de facto) của Internet thay vì OSI?",
+        answer: `<strong>1. Phân biệt:</strong><br/>
+        - <strong>OSI (7 tầng):</strong> Mô hình tham chiếu lý thuyết chặt chẽ do ISO định nghĩa. Tách biệt rõ ràng giữa Dịch vụ, Giao diện và Giao thức.<br/>
+        - <strong>TCP/IP (4 tầng):</strong> Application, Transport, Internet, Network Access. Được thiết kế thực chiến bởi DoD/ARPANET, tích hợp 3 tầng trên của OSI thành tầng Application.<br/><br/>
+        <strong>2. Vì sao TCP/IP trở thành De Facto:</strong><br/>
+        - Thực tế và linh hoạt: TCP/IP được cài đặt mã nguồn mở và kiểm nghiệm rộng rãi trên mạng ARPANET trước khi OSI hoàn thiện chuẩn hóa.<br/>
+        - Đơn giản và hiệu quả cao: Không rườm rà như cấu trúc 7 tầng của OSI.<br/>
+        - Độc lập phần cứng tốt và đi kèm hệ điều hành Unix miễn phí, thu hút toàn bộ cộng đồng khoa học toàn cầu.`
+      },
+      {
+        id: "1.3",
+        chapter: "c1",
+        title: "Câu 1.3: Bắt tay 3 bước TCP & Cơ chế tấn công SYN Flood",
+        question: "Phân tích cơ chế bắt tay 3 bước (3-way handshake) của giao thức TCP. Điều gì xảy ra nếu bước thứ 3 không được hoàn tất (SYN Flood Attack)?",
+        answer: `<strong>1. Cơ chế 3 bước:</strong><br/>
+        - Bước 1: Client gửi cờ <code>SYN (seq = x)</code> đến Server.<br/>
+        - Bước 2: Server phản hồi <code>SYN-ACK (seq = y, ack = x + 1)</code> và cấp phát bộ đệm (Backlog queue), chờ kết nối.<br/>
+        - Bước 3: Client gửi lại <code>ACK (ack = y + 1)</code> để hoàn tất kết nối.<br/><br/>
+        <strong>2. Hiện tượng khi bước 3 không hoàn tất (SYN Flood):</strong><br/>
+        - Server rơi vào trạng thái <code>SYN_RECEIVED</code> (Half-open connection). Bộ đệm hàng đợi (TCP Backlog Queue) của máy chủ bị chiếm dụng toàn bộ tài nguyên nhớ.<br/>
+        - Khi hàng đợi đầy, Server từ chối mọi yêu cầu kết nối từ người dùng hợp lệ mới -> Gây tê liệt dịch vụ (Denial of Service).<br/>
+        - Biện pháp khắc phục: Bật <strong>SYN Cookies</strong>, giảm thời gian timeout, thiết lập Rate Limiting trên Tường lửa.`
+      },
+      {
+        id: "1.4",
+        chapter: "c1",
+        title: "Câu 1.4: Mô hình AAA (Authentication, Authorization, Accounting)",
+        question: "Trình bày mô hình AAA (Authentication, Authorization, Accounting). Phân tích vai trò của từng thành phần trong việc quản lý truy cập mạng.",
+        answer: `<strong>1. Authentication (Xác thực):</strong> Xác minh danh tính của người dùng (\"Bạn là ai?\"). Dùng Username/Password, Token, Smart card, Sinh trắc học.<br/>
+        <strong>2. Authorization (Cấp quyền):</strong> Xác định quyền hạn mà người dùng đã xác thực được phép thực hiện (\"Bạn được làm gì?\"). Dùng Access Control Lists (ACL), RBAC (Role-Based Access Control).<br/>
+        <strong>3. Accounting (Ghi nhật ký/Định lượng):</strong> Thu thập và theo dõi các hành vi, tài nguyên người dùng đã sử dụng (\"Bạn đã làm gì và trong bao lâu?\"). Phục vụ giám sát, truy vết sự cố, thanh toán cước.`
+      },
+      {
+        id: "1.5",
+        chapter: "c1",
+        title: "Câu 1.5: Bảo mật vật lý vs Bảo mật logic",
+        question: "So sánh Bảo mật vật lý (Physical Security) và Bảo mật logic (Logical Security). Tại sao nói bảo mật vật lý là tuyến phòng thủ đầu tiên?",
+        answer: `<strong>1. So sánh:</strong><br/>
+        - <em>Physical Security:</em> Bảo vệ các thiết bị phần cứng, phòng máy chủ, đường cáp khỏi truy cập vật lý, thiên tai, trộm cắp (khóa cửa, bảo vệ, CCTV, UPS, cảm biến nhiệt).<br/>
+        - <em>Logical Security:</em> Bảo vệ tài sản số thông qua phần mềm, thuật toán (Firewall, mã hóa, antivirus, ACL).<br/><br/>
+        <strong>2. Tuyến phòng thủ đầu tiên:</strong> Nếu kẻ tấn công tiếp cận được trực tiếp thiết bị phần cứng, chúng có thể cắm USB boot lại OS, tháo ổ cứng đọc dữ liệu trực tiếp, can thiệp console port bỏ qua mọi lớp mật khẩu và firewall logic.`
+      },
+      {
+        id: "1.6",
+        chapter: "c1",
+        title: "Câu 1.6: Bản chất VPN, Cơ chế Tunneling và Encryption",
+        question: "Giải thích khái niệm VPN (Virtual Private Network). Phân tích cơ chế Tunneling và Encryption trong VPN giúp bảo vệ dữ liệu như thế nào?",
+        answer: `<strong>1. Khái niệm:</strong> Mạng riêng ảo kết nối an toàn giữa các thiết bị từ xa qua môi trường Internet công cộng.<br/>
+        <strong>2. Tunneling (Đóng gói đường hầm):</strong> Đóng gói toàn bộ gói tin gốc bên trong một gói tin IP mới, che giấu cấu trúc mạng nội bộ và địa chỉ IP gốc.<br/>
+        <strong>3. Encryption (Mã hóa):</strong> Sử dụng thuật toán (như AES-256) để mã hóa payload. Dù kẻ xấu bắt được gói tin bằng Wireshark/Sniffer cũng chỉ thấy các chuỗi ký tự vô nghĩa, đảm bảo Confidentiality và Integrity qua IPSec/OpenVPN.`
+      },
+      {
+        id: "1.7",
+        chapter: "c1",
+        title: "Câu 1.7: Phân biệt Threat, Vulnerability và Risk (Kèm ví dụ)",
+        question: "Phân biệt Threat, Vulnerability và Risk. Cho một ví dụ cụ thể kết hợp 3 yếu tố này.",
+        answer: `<strong>1. Định nghĩa:</strong><br/>
+        - <em>Threat (Mối đe dọa):</em> Bất kỳ nguy cơ tiềm tàng nào có thể gây hại cho hệ thống (Hacker, mã độc, lụt lội).<br/>
+        - <em>Vulnerability (Lỗ hổng):</em> Điểm yếu trong phần mềm, cấu hình hoặc con người (chưa vá lỗi SQLi, mật khẩu yếu).<br/>
+        - <em>Risk (Rủi ro):</em> Xác suất mối đe dọa khai thác thành công lỗ hổng nhân với mức độ thiệt hại: <code>Risk = Threat × Vulnerability × Impact</code>.<br/><br/>
+        <strong>2. Ví dụ:</strong> Một website trường học chưa vá lỗi SQL Injection (Vulnerability). Một hacker muốn đánh cắp cơ sở dữ liệu điểm (Threat). Khả năng dữ liệu sinh viên bị rò rỉ và danh tiếng trường bị ảnh hưởng nghiêm trọng (Risk).`
+      },
+      {
+        id: "1.8",
+        chapter: "c1",
+        title: "Câu 1.8: Active Attack vs Passive Attack",
+        question: "Trình bày sự khác biệt giữa Active Attack và Passive Attack. Tại sao Passive Attack thường khó phát hiện hơn?",
+        answer: `<strong>- Active Attack:</strong> Kẻ tấn công can thiệp, sửa đổi dữ liệu hoặc làm gián đoạn dịch vụ (DDoS, chèn mã độc, làm sai lệch bảng ARP). Dễ phát hiện hơn vì hệ thống sinh cảnh báo lỗi.<br/>
+        <strong>- Passive Attack:</strong> Kẻ tấn công chỉ theo dõi, nghe lén và sao chép lưu lượng mà không làm thay đổi dữ liệu hay gián đoạn hệ thống (Traffic analysis, Sniffing gói tin không mã hóa).<br/>
+        <strong>- Khó phát hiện:</strong> Vì không có gói tin nào bị sửa đổi hay phá hoại, hệ thống vẫn hoạt động hoàn toàn bình thường, không kích hoạt cơ chế báo động IDS.`
+      },
+      {
+        id: "1.9",
+        chapter: "c1",
+        title: "Câu 1.9: Mã hóa đối xứng vs Mã hóa bất đối xứng",
+        question: "Trình bày vai trò của Mã hóa (Encryption). So sánh Mã hóa đối xứng (Symmetric) và Mã hóa bất đối xứng (Asymmetric).",
+        answer: `<strong>- Mã hóa đối xứng (Symmetric):</strong> Dùng chung 1 khóa bí mật để mã hóa và giải mã (AES, DES). Ưu điểm: Tốc độ xử lý cực nhanh. Nhược điểm: Rất khó khăn trong việc phân phối khóa an toàn.<br/>
+        <strong>- Mã hóa bất đối xứng (Asymmetric):</strong> Dùng cặp khóa Public Key (công khai) và Private Key (bí mật) như RSA, ECC. Ưu điểm: Giải quyết triệt để bài toán trao đổi khóa và chữ ký số. Nhược điểm: Tốc độ tính toán chậm.<br/>
+        <em>Thực tế:</em> HTTPS kết hợp cả hai - Dùng Asymmetric để thỏa thuận khóa phiên an toàn, sau đó dùng Symmetric để truyền dữ liệu nhanh.`
+      },
+      {
+        id: "1.10",
+        chapter: "c1",
+        title: "Câu 1.10: Chính sách (Policy), Tiêu chuẩn (Standard) và Thủ tục (Procedure)",
+        question: "Phân tích sự khác biệt giữa Chính sách bảo mật (Security Policy), Tiêu chuẩn (Standard) và Thủ tục (Procedure).",
+        answer: `<strong>- Security Policy:</strong> Tài liệu cấp cao do ban lãnh đạo ban hành, định hướng mục tiêu an ninh thông tin tổng thể (\"Cái gì cần bảo vệ và tại sao?\"). Bắt buộc tuân thủ.<br/>
+        <strong>- Standard:</strong> Các quy chuẩn kỹ thuật cụ thể bắt buộc phải áp dụng để hiện thực hóa chính sách (Ví dụ: \"Mật khẩu phải tối thiểu 12 ký tự, dùng AES-256\").<br/>
+        <strong>- Procedure:</strong> Hướng dẫn chi tiết từng bước (Step-by-step) để nhân viên thực hiện thao tác kỹ thuật hàng ngày (Ví dụ: \"Từng bước cài đặt VPN client trên máy tính cá nhân\").`
+      },
+
+      // CHƯƠNG 2
+      {
+        id: "2.1",
+        chapter: "c2",
+        title: "Câu 2.1: Mục tiêu và Ý nghĩa của Đánh giá an toàn mạng (Security Assessment)",
+        question: "Trình bày mục tiêu, phạm vi và ý nghĩa của việc Đánh giá an toàn mạng (Security Assessment).",
+        answer: `<strong>- Mục tiêu:</strong> Nhận diện các điểm yếu, lỗ hổng cấu hình và lỗ hổng phần mềm trước khi kẻ tấn công phát hiện và khai thác.<br/>
+        <strong>- Phạm vi:</strong> Bao gồm hạ tầng mạng (Router, Switch, Firewall), máy chủ, ứng dụng web, cơ sở dữ liệu và cả nhận thức an ninh của người dùng.<br/>
+        <strong>- Ý nghĩa:</strong> Giúp doanh nghiệp chủ động khắc phục nguy cơ rò rỉ dữ liệu, đảm bảo tuân thủ pháp luật (Luật An ninh mạng), tiết kiệm chi phí xử lý sự cố.`
+      },
+      {
+        id: "2.2",
+        chapter: "c2",
+        title: "Câu 2.2: Quy trình Penetration Testing chuẩn & Vai trò của Reconnaissance",
+        question: "Trình bày quy trình Penetration Testing chuẩn (ví dụ theo EC-Council hoặc PTES). Tại sao bước 'Reconnaissance' lại chiếm nhiều thời gian nhất?",
+        answer: `<strong>1. 5 bước chuẩn:</strong><br/>
+        (1) Reconnaissance / Footprinting (Thu thập thông tin)<br/>
+        (2) Scanning & Enumeration (Quét và liệt kê)<br/>
+        (3) Gaining Access / Exploitation (Khai thác xâm nhập)<br/>
+        (4) Maintaining Access (Duy trì quyền truy cập & Backdoor)<br/>
+        (5) Covering Tracks & Reporting (Xóa dấu vết và lập báo cáo).<br/><br/>
+        <strong>2. Reconnaissance chiếm tới 60-70% thời gian vì:</strong> Càng nắm rõ công nghệ mục tiêu, dải IP, sơ đồ mạng, phần mềm máy chủ và danh sách nhân viên, tỷ lệ tấn công thành công ở bước sau càng cao mà không kích hoạt chuông báo động của hệ thống phòng thủ.`
+      },
+      {
+        id: "2.3",
+        chapter: "c2",
+        title: "Câu 2.3: Kỹ thuật Scanning mạng & Ý nghĩa các cờ TCP (SYN, ACK, FIN, RST)",
+        question: "Phân tích kỹ thuật Scanning hệ thống mạng. Giải thích ý nghĩa các cờ (Flags) trong gói tin TCP khi sử dụng Nmap (SYN, ACK, FIN, RST).",
+        answer: `<strong>Ý nghĩa các cờ trong Nmap:</strong><br/>
+        - <strong>SYN (Synchronize):</strong> Khởi tạo kết nối (trong SYN Stealth scan <code>-sS</code>). Nếu cổng mở, mục tiêu trả về SYN-ACK.<br/>
+        - <strong>ACK (Acknowledge):</strong> Xác nhận gói tin đã nhận. Dùng trong ACK Scan <code>-sA</code> để kiểm tra quy tắc lọc của Firewall.<br/>
+        - <strong>FIN (Finish):</strong> Yêu cầu kết thúc kết nối bình thường. Dùng trong FIN Scan <code>-sF</code> (gói tin bất thường để lách firewall cũ).<br/>
+        - <strong>RST (Reset):</strong> Buộc hủy kết nối ngay lập tức. Nếu gửi gói SYN đến cổng đóng, mục tiêu sẽ phản hồi bằng gói RST.`
+      },
+      {
+        id: "2.4",
+        chapter: "c2",
+        title: "Câu 2.4: Phân biệt Vulnerability Assessment (VA) và Penetration Testing (PT)",
+        question: "Phân biệt Vulnerability Assessment (VA) và Penetration Testing (PT). Khi nào doanh nghiệp nên chọn VA và khi nào chọn PT?",
+        answer: `<strong>- Vulnerability Assessment (VA):</strong> Quét tự động trên diện rộng bằng công cụ (Nessus, OpenVAS) để liệt kê toàn bộ các lỗ hổng tiềm tàng. Thường làm định kỳ hàng tháng.<br/>
+        <strong>- Penetration Testing (PT):</strong> Giả lập hacker thực thụ cố gắng khai thác sâu một hoặc nhiều lỗ hổng để chiếm quyền điều khiển hệ thống thực tế. Tốn kém và cần chuyên gia cao cấp.<br/>
+        <strong>- Khi nào chọn:</strong> Doanh nghiệp mới xây dựng hệ thống nên chọn VA trước để vá các lỗ hổng cơ bản. Khi hệ thống đã tương đối hoàn thiện và cần kiểm tra độ vững chãi trước đợt release lớn, nên chọn PT.`
+      },
+      {
+        id: "2.5",
+        chapter: "c2",
+        title: "Câu 2.5: Quy trình Quản lý bản vá (Patch Management)",
+        question: "Quy trình Quản lý bản vá (Patch Management) là gì? Tại sao việc không cập nhật bản vá (Unpatched Software) là nguyên nhân hàng đầu của các vụ vi phạm dữ liệu?",
+        answer: `<strong>1. Quy trình Patch Management:</strong><br/>
+        Giám sát thông báo lỗ hổng -> Đánh giá rủi ro -> Kiểm thử bản vá trên môi trường Staging/Lab -> Triển khai lên Production -> Giám sát và sao lưu dự phòng rollback.<br/><br/>
+        <strong>2. Nguyên nhân hàng đầu:</strong> Khi nhà sản xuất phát hành bản vá, họ công khai mã CVE và chi tiết kỹ thuật lỗ hổng. Hacker có thể dịch ngược bản vá để tạo mã khai thác (1-day exploit) tự động quét hàng loạt mục tiêu chậm cập nhật.`
+      },
+      {
+        id: "2.6",
+        chapter: "c2",
+        title: "Câu 2.6: Tầm quan trọng của Asset Inventory (Kiểm kê tài sản)",
+        question: "Asset Inventory (Kiểm kê tài sản) đóng vai trò gì trong chương trình an toàn thông tin? Làm sao bảo vệ được hệ thống nếu không biết nó tồn tại?",
+        answer: `<strong>- Vai trò:</strong> 'Không thể bảo vệ những gì bạn không biết mình có'. Asset Inventory theo dõi đầy đủ danh sách phần cứng, phần mềm, thiết bị IoT, máy ảo, domain, database.<br/>
+        - Giúp loại bỏ các thiết bị Shadow IT (thiết bị nhân viên tự gắn vào mạng), hệ thống cũ bị bỏ quên (legacy servers) - vốn là những cánh cửa hậu yêu thích của kẻ tấn công.`
+      },
+      {
+        id: "2.7",
+        chapter: "c2",
+        title: "Câu 2.7: Đánh giá Web & 3 lỗ hổng OWASP Top 10 phổ biến",
+        question: "Trình bày phương pháp Đánh giá bảo mật ứng dụng Web (Web Application Assessment). Nêu tên 3 lỗ hổng phổ biến trong OWASP Top 10 và cách kiểm tra sơ bộ.",
+        answer: `<strong>3 lỗ hổng tiêu biểu:</strong><br/>
+        1. <strong>Injection (SQLi):</strong> Kiểm tra bằng cách nhập ký tự đặc biệt (<code>' OR '1'='1</code>) vào ô tìm kiếm/login.<br/>
+        2. <strong>Broken Authentication:</strong> Kiểm tra xem mật khẩu có bị truyền plaintext, thiếu rate-limit brute force, hay cookie session không có cờ HttpOnly/Secure.<br/>
+        3. <strong>Cross-Site Scripting (XSS):</strong> Chèn payload <code>&lt;script&gt;alert(1)&lt;/script&gt;</code> vào ô bình luận xem trình duyệt có thực thi mã JS không.`
+      },
+      {
+        id: "2.8",
+        chapter: "c2",
+        title: "Câu 2.8: Kỹ thuật Footprinting (Passive vs Active)",
+        question: "Trình bày kỹ thuật Footprinting. Phân biệt Passive Footprinting và Active Footprinting. Kỹ thuật này giúp kẻ tấn công thu thập được những gì?",
+        answer: `<strong>- Passive Footprinting:</strong> Thu thập thông tin gián tiếp mà không chạm trực tiếp vào hạ tầng mục tiêu (Google Dorks, mạng xã hội LinkedIn, Whois, Shodan). Rất khó bị phát hiện.<br/>
+        <strong>- Active Footprinting:</strong> Tương tác trực tiếp với hệ thống mục tiêu (Dns zone transfer, Ping sweep, banner grabbing). Có thể để lại log trên Firewall/IDS.<br/>
+        <strong>- Thông tin thu thập:</strong> Dải địa chỉ IP, tên miền con, phiên bản OS, sơ đồ phòng ban, email nhân sự lãnh đạo.`
+      },
+      {
+        id: "2.9",
+        chapter: "c2",
+        title: "Câu 2.9: Kỹ thuật Enumeration (Liệt kê) vs Scanning",
+        question: "Giải thích kỹ thuật Enumeration (Liệt kê). Kỹ thuật này khác gì so với Scanning? Kẻ tấn công thường Enumeration những thông tin gì?",
+        answer: `<strong>- Khác biệt:</strong> Scanning chỉ kiểm tra cổng nào đang mở (Port Open/Closed). Trong khi đó Enumeration kết nối trực tiếp vào dịch vụ đang mở để trích xuất danh sách tài khoản hợp lệ, tên chia sẻ mạng, cấu hình phân quyền.<br/>
+        <strong>- Thông tin liệt kê:</strong> Usernames (qua NetBIOS, SMB, SNMP), SNMP community strings, DNS Zone records, thư mục chia sẻ tệp (Shared Folders).`
+      },
+      {
+        id: "2.10",
+        chapter: "c2",
+        title: "Câu 2.10: Banner Grabbing và lý do cần ẩn thông tin Banner",
+        question: "Trình bày cách đánh giá an toàn cho dịch vụ mạng (Network Services) thông qua Banner Grabbing. Tại sao cần ẩn thông tin Banner?",
+        answer: `<strong>- Cách làm:</strong> Kết nối qua Telnet/Netcat hoặc curl (<code>curl -I http://target.com</code>) để đọc thông điệp chào hỏi (banner) của Web Server, FTP, SSH.<br/>
+        <strong>- Lý do cần ẩn:</strong> Banner thường tiết lộ chính xác loại phần mềm và phiên bản cụ thể (ví dụ: Apache 2.4.49). Kẻ tấn công chỉ cần tra cứu mã CVE tương ứng để tải mã khai thác có sẵn (Exploit-DB), rút ngắn thời gian tấn công.`
+      },
+
+      // CHƯƠNG 3
+      {
+        id: "3.1",
+        chapter: "c3",
+        title: "Câu 3.1: 5 loại Malware phổ biến & Phân biệt Virus, Worm, Trojan",
+        question: "Liệt kê 5 loại Malware phổ biến. Phân biệt sự khác nhau cơ bản giữa Virus, Worm và Trojan.",
+        answer: `<strong>5 loại:</strong> Virus, Worm, Trojan, Ransomware, Spyware/Keylogger.<br/>
+        <strong>Phân biệt cốt lõi:</strong><br/>
+        - <strong>Virus:</strong> Cần gắn kèm (ký sinh) vào một tệp tin/chương trình thực thi khác và cần hành động kích hoạt của con người để lây lan.<br/>
+        - <strong>Worm (Sâu mạng):</strong> Độc lập hoàn toàn, tự động nhân bản và tự lây lan qua các lỗ hổng mạng mà không cần tệp ký sinh hay sự can thiệp của người dùng.<br/>
+        - <strong>Trojan:</strong> Ngụy trang dưới dạng phần mềm hữu ích, hợp pháp (game, bẻ khóa bản quyền) để lừa người dùng tải về cài đặt, tạo backdoor cho hacker.`
+      },
+      {
+        id: "3.2",
+        chapter: "c3",
+        title: "Câu 3.2: Chi tiết kỹ thuật ARP Spoofing / Poisoning trong mạng LAN",
+        question: "Giải thích chi tiết kỹ thuật ARP Spoofing (ARP Poisoning). Tại sao kỹ thuật này lại dẫn đến tấn công Man-in-the-Middle (MITM) trong mạng LAN?",
+        answer: `<strong>1. Cơ chế:</strong> Giao thức ARP không có cơ chế xác thực. Kẻ tấn công gửi liên tục các gói ARP Reply giả mạo vào mạng LAN: nói với máy nạn nhân 'Tôi là Gateway' (MAC attacker gắn với IP router) và nói với Gateway 'Tôi là nạn nhân'.<br/>
+        <strong>2. Dẫn đến MITM:</strong> Bảng ARP cache của cả nạn nhân và gateway đều bị đầu độc. Mọi lưu lượng Internet từ nạn nhân sẽ truyền qua máy attacker trước khi chuyển tiếp ra router, cho phép attacker nghe lén toàn bộ mật khẩu, tin nhắn, token đăng nhập.`
+      },
+      {
+        id: "3.3",
+        chapter: "c3",
+        title: "Câu 3.3: Bản chất SQL Injection (SQLi) & Giải pháp phòng chống triệt để",
+        question: "Mô tả tấn công SQL Injection (SQLi). Phân tích nguyên nhân gốc rễ và trình bày giải pháp phòng chống triệt để.",
+        answer: `<strong>- Nguyên nhân gốc rễ:</strong> Ứng dụng ghép trực tiếp dữ liệu người dùng nhập (chuỗi không tin cậy) vào câu lệnh truy vấn SQL mà không qua kiểm tra, làm thay đổi cú pháp logic của câu lệnh truy vấn database.<br/>
+        <strong>- Giải pháp triệt để:</strong> Bắt buộc dùng <strong>Prepared Statements (Parameterized Queries)</strong> hoặc ORM. Khi đó, dữ liệu đầu vào luôn được đối xử như chuỗi văn bản thuần túy (Data), không bao giờ có thể trở thành mã lệnh thực thi (Code). Ngoài ra áp dụng Nguyên tắc phân quyền tối thiểu (Least Privilege) cho tài khoản kết nối DB.`
+      },
+      {
+        id: "3.4",
+        chapter: "c3",
+        title: "Câu 3.4: Botnet và vai trò trong các cuộc tấn công DDoS quy mô lớn",
+        question: "Botnet là gì? Phân tích vai trò của mạng Botnet trong các cuộc tấn công DDoS quy mô lớn. Cho ví dụ.",
+        answer: `<strong>- Định nghĩa:</strong> Mạng lưới gồm hàng ngàn hoặc hàng triệu máy tính, thiết bị IoT (camera, router) bị nhiễm mã độc và chịu sự điều khiển tập trung bởi Command & Control (C2) server của hacker.<br/>
+        <strong>- Vai trò trong DDoS:</strong> Cho phép hacker khuếch đại lưu lượng tấn công lên hàng trăm Gbps/Tbps từ nhiều nguồn phân tán trên toàn cầu, làm tràn băng thông và quá tải CPU/bộ đệm của máy chủ đích.<br/>
+        <strong>- Ví dụ:</strong> Botnet Mirai (2016) chiếm dụng hàng triệu thiết bị IoT với mật khẩu mặc định làm sập hệ thống DNS Dyn, tê liệt Twitter, Netflix, GitHub.`
+      },
+      {
+        id: "3.5",
+        chapter: "c3",
+        title: "Câu 3.5: Social Engineering - Con người là 'mắt xích yếu nhất'",
+        question: "Social Engineering (Kỹ thuật xã hội) là gì? Tại sao con người được coi là 'mắt xích yếu nhất' trong an ninh mạng?",
+        answer: `<strong>- Định nghĩa:</strong> Kỹ thuật thao túng tâm lý (lòng tham, sự sợ hãi, tính tò mò, sự vâng lời cấp trên) để lừa người dùng tự nguyện cung cấp mật khẩu hoặc mở file độc hại.<br/>
+        <strong>- Mắt xích yếu nhất:</strong> Bạn có thể chi hàng tỷ đồng mua firewall thế hệ mới và mã hóa tối tân, nhưng chỉ cần 1 nhân viên nhẹ dạ nhấp vào file đính kèm email giả mạo là kẻ tấn công đã lọt vào sâu bên trong vùng tin cậy nội bộ.`
+      },
+      {
+        id: "3.6",
+        chapter: "c3",
+        title: "Câu 3.6: Tấn công MITM với HTTPS và Kỹ thuật SSL Stripping",
+        question: "Giải thích tấn công Man-in-the-Middle (MITM) trong bối cảnh HTTPS. Làm thế nào SSL Stripping có thể phá vỡ bảo mật HTTPS?",
+        answer: `<strong>- SSL Stripping:</strong> Attacker đứng giữa kết nối giữa nạn nhân và web server. Khi web server phản hồi chuyển hướng từ HTTP sang HTTPS (302 Redirect), attacker sẽ chặn lại và thay thế liên kết HTTPS thành HTTP thuần gửi cho nạn nhân.<br/>
+        - Kết quả: Nạn nhân giao tiếp với attacker qua HTTP (không mã hóa), trong khi attacker giao tiếp với server qua HTTPS. Toàn bộ dữ liệu của nạn nhân bị đọc trộm.<br/>
+        <strong>- Phòng chống:</strong> Sử dụng cơ chế <strong>HSTS (HTTP Strict Transport Security)</strong> để trình duyệt luôn bắt buộc nạp HTTPS ngay từ đầu.`
+      },
+      {
+        id: "3.7",
+        chapter: "c3",
+        title: "Câu 3.7: Sniffing trên môi trường Hub vs Switch",
+        question: "Sniffing là gì? Phân tích sự khác biệt khi thực hiện Sniffing trên môi trường Hub và Switch. Tại sao trên Switch cần kỹ thuật hỗ trợ?",
+        answer: `<strong>- Sniffing:</strong> Bắt và phân tích lưu lượng gói tin mạng truyền qua card mạng (NIC) ở chế độ Promiscuous mode.<br/>
+        <strong>- Môi trường Hub:</strong> Hub phát quảng bá (Broadcast) dữ liệu đến tất cả các cổng, nên chỉ cần cắm máy vào là bắt được gói tin của toàn mạng.<br/>
+        <strong>- Môi trường Switch:</strong> Switch lưu bảng MAC để chỉ chuyển mạch dữ liệu đến đúng cổng đích. Để sniff trên Switch, attacker phải dùng các kỹ thuật: <em>ARP Spoofing, MAC Flooding</em> (làm tràn bảng CAM để Switch biến thành Hub), hoặc quản trị viên dùng <em>Port Mirroring (SPAN)</em>.`
+      },
+      {
+        id: "3.8",
+        chapter: "c3",
+        title: "Câu 3.8: Leo thang đặc quyền (Vertical vs Horizontal Privilege Escalation)",
+        question: "Leo thang đặc quyền (Privilege Escalation) là gì? Phân biệt Leo thang dọc (Vertical) và Leo thang ngang (Horizontal).",
+        answer: `<strong>- Leo thang đặc quyền:</strong> Hành vi chiếm đoạt quyền hạn cao hơn mức được hệ thống cho phép ban đầu.<br/>
+        <strong>- Leo thang dọc (Vertical):</strong> Người dùng quyền thấp (Guest/User thông thường) chiếm đoạt được quyền quản trị tối cao (Root/Administrator).<br/>
+        <strong>- Leo thang ngang (Horizontal):</strong> Người dùng A truy cập trái phép vào tài nguyên và chức năng của người dùng B (cả 2 cùng cấp độ quyền), ví dụ đổi ID trên thanh URL để xem trộm hồ sơ người khác (IDOR).`
+      },
+      {
+        id: "3.9",
+        chapter: "c3",
+        title: "Câu 3.9: Tấn công Cross-Site Scripting (XSS) - Stored vs Reflected",
+        question: "Trình bày tấn công Cross-Site Scripting (XSS). Phân biệt Stored XSS và Reflected XSS.",
+        answer: `<strong>- Bản chất XSS:</strong> Chèn mã kịch bản độc hại (thường là JavaScript) vào ứng dụng web để thực thi trên trình duyệt của nạn nhân.<br/>
+        <strong>- Stored XSS (Persistent):</strong> Mã độc được lưu vĩnh viễn trong CSDL của trang web (bình luận, bài đăng diễn đàn). Bất kỳ ai truy cập trang đó đều bị tấn công -> Nguy hiểm cao nhất.<br/>
+        <strong>- Reflected XSS (Non-persistent):</strong> Mã độc nằm trong URL query parameter và phản hồi ngay lập tức trên trang kết quả. Cần lừa nạn nhân bấm vào link đặc biệt.`
+      },
+      {
+        id: "3.10",
+        chapter: "c3",
+        title: "Câu 3.10: Tấn công Evil Twin / Rogue Access Point trong WiFi",
+        question: "Trình bày các nguy cơ an ninh đối với mạng không dây (Wireless Network). Giải thích cơ chế tấn công Rogue Access Point (Evil Twin).",
+        answer: `<strong>- Cơ chế Evil Twin:</strong> Attacker tạo một điểm phát WiFi giả mạo có cùng tên SSID và thậm chí clone cùng địa chỉ MAC với WiFi thật (ví dụ: 'Cafe_Free_Wifi').<br/>
+        - Attacker gửi gói tin Deauthentication ép các thiết bị ngắt kết nối khỏi AP thật. Thiết bị sẽ tự động kết nối sang AP giả mạo có sóng mạnh hơn.<br/>
+        - Khi kết nối, attacker tạo trang đăng nhập Captive Portal giả để thu thập mật khẩu hoặc đánh cắp toàn bộ cookie phiên.`
+      },
+
+      // CHƯƠNG 4
+      {
+        id: "4.1",
+        chapter: "c4",
+        title: "Câu 4.1: Tường lửa - Packet Filtering vs Stateful Inspection Firewall",
+        question: "Tường lửa (Firewall) là gì? So sánh chi tiết Packet Filtering Firewall và Stateful Inspection Firewall.",
+        answer: `<strong>- Packet Filtering Firewall (Stateless):</strong> Kiểm tra từng gói tin độc lập dựa trên Header (Source IP, Dest IP, Port, Protocol) mà không lưu trạng thái kết nối. Nhược điểm: Dễ bị lừa bởi gói tin giả mạo, cấu hình phức tạp.<br/>
+        <strong>- Stateful Inspection Firewall:</strong> Theo dõi toàn bộ trạng thái của một phiên kết nối (bảng State Table). Gói tin phản hồi chỉ được cho phép đi qua nếu nó thuộc về một kết nối hợp lệ đã được khởi tạo từ trước bên trong mạng nội bộ. Khả năng bảo mật vượt trội.`
+      },
+      {
+        id: "4.2",
+        chapter: "c4",
+        title: "Câu 4.2: So sánh IDS và IPS - Vì sao IPS là sự nâng cấp của IDS?",
+        question: "So sánh IDS (Hệ thống phát hiện xâm nhập) và IPS (Hệ thống ngăn chặn xâm nhập). Tại sao nói IPS là sự nâng cấp của IDS?",
+        answer: `<strong>- IDS (Intrusion Detection System):</strong> Đặt ở chế độ Out-of-band (chỉ lắng nghe bản sao lưu lượng qua SPAN port). Khi phát hiện tấn công, IDS chỉ ghi log và gửi cảnh báo (Alert) cho admin mà không chặn được lưu lượng thực tế.<br/>
+        <strong>- IPS (Intrusion Prevention System):</strong> Đặt trực tiếp In-line trên đường truyền mạng. Khi phát hiện gói tin độc hại, IPS lập tức Drop (hủy) gói tin hoặc ngắt kết nối ngay thời gian thực.<br/>
+        <strong>- Nâng cấp:</strong> IPS chủ động ngăn chặn tấn công ngay lập tức trước khi nó chạm tới máy chủ đích.`
+      },
+      {
+        id: "4.3",
+        chapter: "c4",
+        title: "Câu 4.3: HIDS vs NIDS trong chiến lược bảo mật toàn diện",
+        question: "Phân biệt HIDS (Host-based IDS) và NIDS (Network-based IDS). Trong một chiến lược bảo mật toàn diện, ta nên dùng loại nào?",
+        answer: `<strong>- NIDS:</strong> Cài đặt tại các điểm nút mạng trọng yếu để giám sát toàn bộ lưu lượng qua lại trên phân đoạn mạng đó. Không làm tốn CPU máy chủ.<br/>
+        <strong>- HIDS:</strong> Cài đặt trực tiếp như một Agent trên từng máy chủ (Host) để giám sát file log hệ thống, tính toàn vẹn tệp (FIM), lời gọi hệ thống.<br/>
+        <strong>- Kết luận:</strong> Phải kết hợp cả hai theo mô hình Phòng thủ chiều sâu (Defense in Depth). Vì lưu lượng hiện nay mã hóa SSL/TLS khiến NIDS không đọc được nội dung gói tin, khi đó HIDS trên máy chủ là chốt chặn quyết định.`
+      },
+      {
+        id: "4.4",
+        chapter: "c4",
+        title: "Câu 4.4: Kiến trúc Tường lửa Screened Subnet (DMZ)",
+        question: "Trình bày kiến trúc tường lửa Screened Subnet (hay còn gọi là DMZ). Vẽ sơ đồ minh họa bằng lời và giải thích vai trò vùng DMZ.",
+        answer: `<strong>1. Sơ đồ kiến trúc:</strong><br/>
+        <code>Internet &lt;--&gt; External Firewall &lt;--&gt; [ Vùng DMZ (Web/Mail/DNS Server) ] &lt;--&gt; Internal Firewall &lt;--&gt; [ Mạng Nội bộ LAN (DB, AD, PC) ]</code><br/><br/>
+        <strong>2. Vai trò vùng DMZ:</strong> Là vùng đệm trung lập chứa các máy chủ công khai phục vụ Internet. Nếu máy chủ Web ở DMZ bị hacker chiếm quyền, hệ thống tường lửa thứ 2 vẫn ngăn chặn không cho hacker thâm nhập sâu vào mạng nội bộ chứa dữ liệu tuyệt mật.`
+      },
+      {
+        id: "4.5",
+        chapter: "c4",
+        title: "Câu 4.5: Nguyên tắc 'Default Deny' vs 'Default Allow' trong Firewall",
+        question: "Khi thiết kế chính sách (Rule base) cho Firewall, nguyên tắc 'Default Deny' (Mặc định từ chối) là gì? Tại sao nó quan trọng hơn 'Default Allow'?",
+        answer: `<strong>- Default Deny (Implicit Deny):</strong> Quy tắc cuối cùng trong bảng luật: Chặn tất cả mọi lưu lượng (Block All), chỉ những gì được định nghĩa tường minh ở trên mới được phép đi qua.<br/>
+        <strong>- Default Allow:</strong> Cho phép tất cả, chỉ chặn những gì được liệt kê.<br/>
+        <strong>- Quan trọng vì:</strong> Người quản trị không thể lường hết hàng triệu biến thể tấn công và các cổng mới. Default Deny thu hẹp tối đa bề mặt tấn công, bảo đảm an toàn theo chuẩn quốc tế.`
+      },
+      {
+        id: "4.6",
+        chapter: "c4",
+        title: "Câu 4.6: Khái niệm Defense in Depth (Phòng thủ chiều sâu)",
+        question: "Giải thích khái niệm Defense in Depth (Phòng thủ chiều sâu). Áp dụng mô hình này để bảo vệ một Web Server.",
+        answer: `<strong>- Khái niệm:</strong> Chiến lược bố trí nhiều tầng nhiều lớp bảo mật độc lập nhau. Nếu một lớp bị phá vỡ, các lớp tiếp theo vẫn bảo vệ được tài sản.<br/>
+        <strong>- Áp dụng cho Web Server:</strong><br/>
+        + Lớp 1 (Edge): Cloudflare DDoS Protection & WAF.<br/>
+        + Lớp 2 (Perimeter): Network Firewall & NIDS.<br/>
+        + Lớp 3 (Host): Tắt cổng không dùng, OS Hardening, cài HIDS/Antivirus.<br/>
+        + Lớp 4 (Application): Kiểm tra input chống SQLi/XSS, mã hóa HTTPS.<br/>
+        + Lớp 5 (Data): Mã hóa Database AES-256, sao lưu định kỳ Off-site.`
+      },
+      {
+        id: "4.7",
+        chapter: "c4",
+        title: "Câu 4.7: Bản chất và vai trò của Honeypot",
+        question: "Honeypot là gì? Phân tích vai trò của Honeypot trong việc nghiên cứu hành vi tấn công và đánh lạc hướng Hacker.",
+        answer: `<strong>- Bản chất:</strong> Hệ thống mồi nhử được cố tình thiết lập có vẻ chứa dữ liệu giá trị và có lỗ hổng để dụ kẻ tấn công xâm nhập.<br/>
+        <strong>- Vai trò:</strong><br/>
+        + Đánh lạc hướng hacker ra khỏi các máy chủ sản xuất thực tế.<br/>
+        + Ghi lại chi tiết kỹ thuật, công cụ, hành vi và các mã khai thác Zero-day của hacker để đội ngũ an ninh phân tích, nâng cấp hệ thống phòng thủ.`
+      },
+      {
+        id: "4.8",
+        chapter: "c4",
+        title: "Câu 4.8: Xác thực đa yếu tố (MFA/2FA) và sự lỗi thời của Password",
+        question: "Phân tích vai trò của Xác thực đa yếu tố (MFA/2FA). Tại sao mật khẩu truyền thống không còn an toàn?",
+        answer: `<strong>- Mật khẩu truyền thống dễ bị:</strong> Bẻ khóa brute force, rò rỉ dữ liệu từ bên thứ ba, bị lừa đảo qua phishing hoặc keylogger theo dõi.<br/>
+        <strong>- Mô hình MFA:</strong> Kết hợp từ 2 trong 3 yếu tố:<br/>
+        1. Something you know (Mật khẩu, PIN).<br/>
+        2. Something you have (Điện thoại nhận OTP, khóa YubiKey).<br/>
+        3. Something you are (Vân tay, khuôn mặt).<br/>
+        Dù kẻ tấn công có trộm được mật khẩu thì vẫn không thể đăng nhập nếu không có yếu tố thứ 2.`
+      },
+      {
+        id: "4.9",
+        chapter: "c4",
+        title: "Câu 4.9: Phân biệt Forward Proxy và Reverse Proxy",
+        question: "Proxy Server là gì? Phân biệt Forward Proxy và Reverse Proxy trong bảo mật.",
+        answer: `<strong>- Forward Proxy:</strong> Đứng trước người dùng (Client) trong mạng LAN. Đại diện cho client gửi yêu cầu ra Internet nhằm ẩn IP người dùng, lọc nội dung web xấu, kiểm soát truy cập của nhân viên.<br/>
+        <strong>- Reverse Proxy:</strong> Đứng trước các máy chủ (Server). Tiếp nhận yêu cầu từ Internet gửi vào để cân bằng tải (Load Balancing), giải mã SSL (SSL Offloading), và ngăn chặn tấn công tiếp cận trực tiếp máy chủ web.`
+      },
+      {
+        id: "4.10",
+        chapter: "c4",
+        title: "Câu 4.10: Next-Generation Firewall (NGFW) và Deep Packet Inspection (DPI)",
+        question: "Next-Generation Firewall (NGFW) khác gì so với Firewall truyền thống? Vai trò của tính năng DPI (Deep Packet Inspection).",
+        answer: `<strong>- Khác biệt:</strong> Firewall truyền thống chỉ kiểm tra đến Tầng 3 và 4 (IP & Port). NGFW kiểm tra đến tận Tầng 7 (Application Layer), tích hợp IPS, Antivirus, và kiểm soát hành vi ứng dụng.<br/>
+        <strong>- Vai trò của DPI:</strong> Quét sâu vào toàn bộ nội dung dữ liệu (Payload) của gói tin để phát hiện mã độc ẩn giấu, phần mềm gián điệp, ngay cả khi chúng chạy trên cổng web tiêu chuẩn 80/443.`
+      }
+    ];
+
+    /* =======================================================================
+       8. 10 MOCK EXAMS DATA BANK
+    ======================================================================= */
+    const mockExamsData = [
+      {
+        id: "CKC-01",
+        name: "Đề 01 (Chuẩn Đề Thi Mẫu 00): Phishing Email, Smishing SMS & Crack Mật Khẩu GPU",
+        q1: {
+          score: 3.0,
+          cdr: "SO4.2",
+          title: "Câu 1 (SO4.2 ABET - 3 điểm): Tình huống Đạo đức & Email nhận quà",
+          content: "Bạn nhận được một email từ một người lạ với tiêu đề hấp dẫn, yêu cầu bạn nhấp vào một liên kết để nhận quà. Hãy phân tích các rủi ro về mặt đạo đức và an ninh nếu bạn làm theo. Bạn nên hành xử như thế nào trong tình huống này?",
+          solution: `<strong>1. Rủi ro về An ninh:</strong><br/>
+          - Đây là dấu hiệu của tấn công lừa đảo (Phishing). Liên kết có thể dẫn đến website giả mạo nhằm đánh cắp thông tin tài khoản, mật khẩu, thông tin cá nhân.<br/>
+          - Có thể dẫn tới tải mã độc (Malware, Trojan, Ransomware) làm lây nhiễm thiết bị và lây lan trong toàn mạng doanh nghiệp.<br/><br/>
+          <strong>2. Rủi ro về Đạo đức nghề nghiệp:</strong><br/>
+          - Người dùng có trách nhiệm bảo vệ dữ liệu và hạ tầng của tổ chức. Hành vi thiếu cẩn trọng có thể làm rò rỉ dữ liệu nội bộ, ảnh hưởng đến đồng nghiệp, khách hàng và uy tín đơn vị.<br/><br/>
+          <strong>3. Hành xử đúng đắn:</strong><br/>
+          - Tuyệt đối không nhấp vào liên kết, không tải file đính kèm.<br/>
+          - Báo cáo email lừa đảo cho bộ phận IT / An ninh thông tin.<br/>
+          - Đánh dấu là Phishing/Spam và xóa thư.<br/>
+          - Nếu lỡ nhấp hoặc nhập mật khẩu: Lập tức báo bộ phận IT, đổi mật khẩu trên thiết bị an toàn khác, thu hồi các phiên làm việc và kích hoạt MFA.`
+        },
+        q2: {
+          score: 4.0,
+          cdr: "SO6.2",
+          title: "Câu 2 (SO6.2 ABET - 4 điểm): Giải pháp phòng chống tấn công Smishing SMS",
+          content: "Bạn nhận được SMS thông báo trúng thưởng lớn và yêu cầu truy cập đường link để nhập thông tin cá nhân và nhận giải.\n1. Đây là dạng tấn công phishing nào?\n2. Phương thức này hoạt động ra sao và vì sao dễ đánh lừa người dùng?\n3. Người dùng nên làm gì để tránh bị lừa đảo trong trường hợp này?",
+          solution: `<strong>1. Dạng tấn công:</strong><br/>
+          - Đây là <strong>Smishing (SMS Phishing)</strong>: Lừa đảo qua tin nhắn văn bản SMS.<br/><br/>
+          <strong>2. Phương thức hoạt động & lý do dễ bị lừa:</strong><br/>
+          - <em>Hoạt động:</em> Kẻ tấn công gửi SMS giả mạo ngân hàng, doanh nghiệp có chứa liên kết dẫn đến website giả mạo có giao diện giống hệt trang thật để dụ người dùng nhập OTP, mật khẩu, CCCD, thông tin tài khoản ngân hàng.<br/>
+          - <em>Vì sao dễ bị lừa:</em> Đánh vào tâm lý lòng tham (trúng thưởng) hoặc sự hoang mang (tài khoản bị khóa); Màn hình điện thoại nhỏ khó soi tên miền đầy đủ; Kẻ xấu dùng Brandname giả mạo viễn thông.<br/><br/>
+          <strong>3. Biện pháp phòng chống:</strong><br/>
+          - Không nhấp vào đường link lạ trong SMS.<br/>
+          - Không bao giờ cung cấp mã OTP, mật khẩu cho bất kỳ ai.<br/>
+          - Chủ động xác minh qua ứng dụng chính thức hoặc gọi trực tiếp đến tổng đài hotline chính thức của doanh nghiệp.<br/>
+          - Chặn và báo cáo số điện thoại/tổng đài lừa đảo.`
+        },
+        q3: {
+          score: 3.0,
+          cdr: "SO6.1",
+          title: "Câu 3 (SO6.1 ABET - 3 điểm): Bài toán tính toán Brute-Force Mật khẩu bằng GPU",
+          content: "Một hệ thống dùng mật khẩu có cấu trúc:\n- 2 ký tự đầu: chữ cái (a–z, không phân biệt hoa thường)\n- 4 ký tự tiếp: chữ số (0–9)\n- 2 ký tự cuối: chữ cái hoặc số (36 khả năng mỗi ký tự)\nĐiều kiện tấn công:\n- Hacker có 2 GPU: Mỗi GPU thử được 2 × 10⁹ mật khẩu/giây.\n- Cơ chế bảo vệ hệ thống: Sau mỗi 1 giây tấn công, hệ thống chặn 0.5 giây.\n- Người dùng chọn mật khẩu dễ nên 20% không gian mật khẩu bị loại bỏ.\nYêu cầu:\n1. Tính tổng không gian mật khẩu ban đầu.\n2. Tính không gian mật khẩu sau khi loại mật khẩu yếu.\n3. Tính tốc độ brute-force hack thực tế.\n4. Tính thời gian mật khẩu bị crack trong trường hợp xấu nhất.",
+          solution: `<strong>Lời giải chi tiết từng bước:</strong><br/><br/>
+          <strong>1. Tổng không gian mật khẩu ban đầu:</strong><br/>
+          $$N = 26^2 \\times 10^4 \\times 36^2 = 676 \\times 10.000 \\times 1.296 = 8.760.960.000$$ (mật khẩu)<br/><br/>
+          <strong>2. Không gian mật khẩu sau khi loại 20% mật khẩu yếu:</strong><br/>
+          $$N_1 = 80\\% \\times N = 8.760.960.000 \\times 0.8 = 7.008.768.000$$ (mật khẩu)<br/><br/>
+          <strong>3. Tốc độ brute force thực tế:</strong><br/>
+          - Tốc độ lý thuyết của 2 GPU: $$H = 2 \\times (2 \\times 10^9) = 4 \\times 10^9$$ (mật khẩu/s)<br/>
+          - Chu kỳ tấn công: 1s tấn công + 0.5s chặn = 1.5 giây.<br/>
+          - Hiệu suất thời gian: $$E = \\frac{1}{1.5} = \\frac{2}{3} \\approx 0.6667$$<br/>
+          - Tốc độ thực tế: $$H_1 = H \\times E = 4 \\times 10^9 \\times \\frac{2}{3} \\approx 2.67 \\times 10^9$$ (mật khẩu/giây)<br/><br/>
+          <strong>4. Thời gian crack trong trường hợp xấu nhất:</strong><br/>
+          $$T = \\frac{N_1}{H_1} = \\frac{7.008.768.000}{2.67 \\times 10^9} \\approx 2.62$$ giây.<br/>
+          <strong>Kết luận:</strong> Hệ thống bị crack trong thời gian xấp xỉ 2.62 giây.`
+        }
+      },
+      {
+        id: "CKC-02",
+        name: "Đề 02: Quản lý yêu cầu che giấu lỗ hổng, SQL Injection & Tính toán Botnet DDoS",
+        q1: {
+          score: 3.0,
+          cdr: "SO4.2",
+          title: "Câu 1 (SO4.2 ABET - 3 điểm): Xử lý khi Quản lý yêu cầu che giấu lỗ hổng nghiêm trọng",
+          content: "Trong quá trình kiểm tra an ninh hệ thống, bạn phát hiện một lỗ hổng nghiêm trọng trên máy chủ của doanh nghiệp nhưng người quản lý yêu cầu “chưa báo cáo để tránh bị khiển trách”. Bạn sẽ xử lý thế nào để vừa đảm bảo an toàn hệ thống, vừa đúng với chuẩn mực đạo đức nghề nghiệp?",
+          solution: `<strong>1. Phân tích nguyên tắc:</strong><br/>
+          - Đạo đức nghề nghiệp CNTT đòi hỏi tính trung thực, đặt sự an toàn thông tin và lợi ích chung của doanh nghiệp lên trên lợi ích cá nhân ngắn hạn.<br/><br/>
+          <strong>2. Các bước xử lý cụ thể:</strong><br/>
+          - <em>Thuyết phục quản lý:</em> Phân tích rõ hậu quả khôn lường nếu tin tặc khai thác lỗ hổng (rò rỉ dữ liệu, bị kiện tụng, thiệt hại hàng tỷ đồng và quản lý sẽ chịu trách nhiệm hình sự nặng nề hơn nhiều).<br/>
+          - <em>Đề xuất phương án phối hợp:</em> Đề xuất cùng quản lý lập báo cáo kèm theo phương án vá lỗi khắc phục ngay lập tức để chuyển nguy thành cơ hội ghi điểm với ban giám đốc.<br/>
+          - <em>Quy trình leo thang (Escalation):</em> Nếu quản lý vẫn cố tình ép che giấu, bạn cần tuân thủ quy trình báo cáo nội bộ cho Trưởng bộ phận An ninh thông tin / Ban giám đốc để bảo vệ hệ thống.<br/>
+          - <em>Bảo mật thông tin:</em> Giữ kín thông tin lỗ hổng, tuyệt đối không tiết lộ ra công chúng hoặc mạng xã hội.`
+        },
+        q2: {
+          score: 4.0,
+          cdr: "SO6.2",
+          title: "Câu 2 (SO6.2 ABET - 4 điểm): Phân tích tấn công SQL Injection và Cơ chế Prepared Statement",
+          content: "Một trang web bán hàng có tính năng đăng nhập. Lập trình viên sử dụng câu lệnh SQL:\nSELECT * FROM accounts WHERE username = '$user' AND password = '$pass';\nKẻ tấn công nhập vào Username: admin' # và để trống Password.\nYêu cầu:\n1. Kết quả của hành động này là gì?\n2. Tại sao ký tự # (hoặc --) lại quan trọng trong tình huống này?\n3. Đưa ra cách khắc phục triệt để lỗi này kèm giải thích cơ chế.",
+          solution: `<strong>1. Kết quả:</strong> Kẻ tấn công sẽ đăng nhập thành công vào tài khoản của <code>admin</code> với toàn bộ quyền quản trị cao nhất mà không cần biết mật khẩu.<br/><br/>
+          <strong>2. Vai trò của ký tự #:</strong><br/>
+          - Ký tự <code>#</code> trong MySQL (hoặc <code>--</code> trong SQL Server) là ký tự bắt đầu chú thích (Comment).<br/>
+          - Câu lệnh thực thi thành: <code>SELECT * FROM accounts WHERE username = 'admin' # ' AND password = ' ';</code><br/>
+          - Mọi điều kiện kiểm tra mật khẩu phía sau bị triệt tiêu hoàn toàn. Do user 'admin' tồn tại, câu lệnh trả về kết quả Đúng.<br/><br/>
+          <strong>3. Khắc phục triệt để:</strong><br/>
+          - Sử dụng <strong>Prepared Statements (Parameterized Queries)</strong> với dấu giữ chỗ <code>?</code>.<br/>
+          - Cơ chế: CSDL biên dịch trước cấu trúc lệnh SQL. Dữ liệu người dùng truyền vào sau đó được coi là chuỗi giá trị thuần túy (Data), ký tự <code>'</code> hay <code>#</code> không thể làm thay đổi cấu trúc mã lệnh.`
+        },
+        q3: {
+          score: 3.0,
+          cdr: "SO6.1",
+          title: "Câu 3 (SO6.1 ABET - 3 điểm): Bài toán tính Băng thông & PPS Botnet DDoS với CDN",
+          content: "Một botnet gồm 3 loại thiết bị:\n- PC: 20.000 máy (2 Mbps/máy, tỷ lệ hoạt động 80%)\n- IoT: 50.000 máy (500 Kbps/máy, tỷ lệ hoạt động 60%)\n- Server bị chiếm quyền: 2.000 máy (50 Mbps/máy, tỷ lệ hoạt động 90%)\nThông số khác: Kích thước gói trung bình = 1000 byte; Overhead mạng = 25%.\nHệ thống mục tiêu có: Băng thông tối đa = 40 Gbps; Firewall xử lý tối đa = 5 triệu packet/giây (5 Mpps).\nYêu cầu:\n1. Tính tổng băng thông tấn công thực tế (Gbps).\n2. Tính tổng số packet/giây (Mpps).\n3. Hệ thống bị sập do băng thông hay giới hạn xử lý packet?\n4. Nếu bật CDN giảm tải 70% traffic, hệ thống có sống sót không?",
+          solution: `<strong>Lời giải chi tiết:</strong><br/>
+          <strong>1. Tổng băng thông tấn công thực tế:</strong><br/>
+          - Số máy thực tế: PC = 20.000 × 0.8 = 16.000 máy; IoT = 50.000 × 0.6 = 30.000 máy; Server = 2.000 × 0.9 = 1.800 máy.<br/>
+          - Băng thông cơ bản: <br/>
+          + PC = 16.000 × 2 Mbps = 32.000 Mbps<br/>
+          + IoT = 30.000 × 0.5 Mbps = 15.000 Mbps<br/>
+          + Server = 1.800 × 50 Mbps = 90.000 Mbps<br/>
+          => Tổng = 32.000 + 15.000 + 90.000 = 137.000 Mbps = 137 Gbps.<br/>
+          - Có Overhead 25%: $$Băng\\_thông\\_thực = 137 \\times 1.25 = 171.25\\text{ Gbps}$$.<br/><br/>
+          <strong>2. Tính PPS:</strong><br/>
+          - Gói 1000 byte = 8000 bit.<br/>
+          - $$PPS = \\frac{171.25 \\times 10^9\\text{ bps}}{8000\\text{ bit}} = 21.406.250\\text{ pps} \\approx 21.4\\text{ triệu pps}$$.<br/><br/>
+          <strong>3. Đánh giá sập:</strong><br/>
+          - Băng thông (171.25 Gbps > 40 Gbps) -> Quá tải.<br/>
+          - Xử lý packet (21.4 Mpps > 5 Mpps) -> Quá tải.<br/>
+          => Hệ thống sập do cả 2 yếu tố.<br/><br/>
+          <strong>4. Khi bật CDN (giảm 70%, còn lại 30%):</strong><br/>
+          - Băng thông còn lại = 171.25 × 0.3 = 51.375 Gbps (> 40 Gbps -> Vẫn quá tải).<br/>
+          - PPS còn lại = 21.4 Mpps × 0.3 = 6.42 Mpps (> 5 Mpps -> Vẫn quá tải).<br/>
+          => <strong>Kết luận:</strong> Hệ thống vẫn bị sập!`
+        }
+      },
+      {
+        id: "CKC-03",
+        name: "Đề 03: Đạo đức truy cập Email Giám đốc, Tấn công MITM WiFi Cafe & Crack Mật khẩu",
+        q1: {
+          score: 3.0,
+          cdr: "SO4.2",
+          title: "Câu 1 (SO4.2 ABET - 3 điểm): Tình huống phát hiện truy cập Email Giám đốc không cần mật khẩu",
+          content: "Bạn là nhân viên an ninh mạng của một công ty và phát hiện có thể truy cập vào email cá nhân của giám đốc mà không cần mật khẩu do lỗi cấu hình. Bạn sẽ xử lý tình huống này như thế nào để vừa đảm bảo an toàn hệ thống vừa tuân thủ đạo đức nghề nghiệp?",
+          solution: `<strong>1. Tôn trọng quyền riêng tư tuyệt đối:</strong> Không được đọc, sao chép, tải về hoặc phát tán bất kỳ nội dung thư từ nào trong hộp thư của giám đốc.<br/>
+          <strong>2. Giữ bí mật an toàn:</strong> Không chia sẻ lỗ hổng này cho đồng nghiệp không có phận sự để tránh nguy cơ bị khai thác.<br/>
+          <strong>3. Báo cáo trung thực:</strong> Lập báo cáo kỹ thuật mô tả chính xác cơ chế lỗi và gửi cho Trưởng bộ phận an ninh / Giám đốc kỹ thuật.<br/>
+          <strong>4. Đề xuất khắc phục:</strong> Kiểm tra lại phân quyền tài khoản (RBAC), cấu hình lại cơ chế Single Sign-On (SSO) và bật MFA.`
+        },
+        q2: {
+          score: 4.0,
+          cdr: "SO6.2",
+          title: "Câu 2 (SO6.2 ABET - 4 điểm): Phân tích tấn công Man-in-the-Middle (MITM) tại WiFi Quán Cà phê",
+          content: "Tại một quán cafe WiFi công cộng, nhiều người dùng bị mất tài khoản mạng xã hội. Bạn phát hiện có dấu hiệu của tấn công MITM.\n1. Kẻ tấn công có thể đã sử dụng những phương pháp nào?\n2. Vai trò của ARP Spoofing trong tình huống này là gì?\n3. Người dùng cần làm gì để tự bảo vệ mình?",
+          solution: `<strong>1. Phương pháp tấn công:</strong> ARP Spoofing, Tạo điểm phát sóng giả mạo (Evil Twin WiFi), DNS Spoofing, kết hợp SSL Stripping để bẻ mã hóa HTTPS.<br/><br/>
+          <strong>2. Vai trò của ARP Spoofing:</strong> Giúp attacker lừa máy nạn nhân và router, tự đưa card mạng của mình vào giữa đường truyền để nghe lén (Sniff) mật khẩu, cướp Cookie phiên (Session Hijacking).<br/><br/>
+          <strong>3. Biện pháp phòng vệ:</strong><br/>
+          - Bắt buộc bật VPN khi truy cập WiFi công cộng để mã hóa toàn bộ dữ liệu.<br/>
+          - Chỉ truy cập các trang có HTTPS và cảnh báo chứng chỉ SSL.<br/>
+          - Bật xác thực đa yếu tố (MFA). Không giao dịch tài chính trên WiFi lạ.`
+        },
+        q3: {
+          score: 3.0,
+          cdr: "SO6.1",
+          title: "Câu 3 (SO6.1 ABET - 3 điểm): Bài toán Brute-Force mật khẩu 8 ký tự với 4 GPU",
+          content: "Một hệ thống mật khẩu quy định:\n- 3 ký tự đầu: chữ cái thường (a–z, 26 ký tự)\n- 3 ký tự tiếp: chữ số (0–9, 10 ký tự)\n- 2 ký tự cuối: chữ hoa hoặc số (36 khả năng)\nĐiều kiện:\n- Hacker dùng cụm 4 GPU, mỗi GPU thử được 1.5 × 10⁹ hash/s.\n- Hệ thống khóa tạm thời 1 giây sau mỗi 2 giây tấn công liên tục.\n- 30% mật khẩu yếu bị loại bỏ.\nYêu cầu:\n1. Tính không gian mật khẩu ban đầu.\n2. Tính không gian mật khẩu sau khi loại mật khẩu yếu.\n3. Tính tốc độ brute-force thực tế.\n4. Tính thời gian crack tối đa.",
+          solution: `<strong>Lời giải:</strong><br/>
+          1. Không gian ban đầu: $$N = 26^3 \\times 10^3 \\times 36^2 = 17.576 \\times 1.000 \\times 1.296 = 22.778.496.000$$ mật khẩu.<br/>
+          2. Loại bỏ 30% mật khẩu yếu (còn 70%): $$N_1 = 22.778.496.000 \\times 0.7 = 15.944.947.200$$ mật khẩu.<br/>
+          3. Tốc độ lý thuyết: $$H = 4 \\times (1.5 \\times 10^9) = 6 \\times 10^9$$ hash/s.<br/>
+          Chu kỳ: 2s chạy + 1s khóa = 3 giây -> Hiệu suất: $$E = \\frac{2}{3}$$.<br/>
+          Tốc độ thực tế: $$H_1 = 6 \\times 10^9 \\times \\frac{2}{3} = 4 \\times 10^9$$ hash/giây.<br/>
+          4. Thời gian crack tối đa: $$T = \\frac{15.944.947.200}{4 \\times 10^9} \\approx 3.99$$ giây.`
+        }
+      },
+      {
+        id: "CKC-04",
+        name: "Đề 04: Đạo đức Pentest không xin phép, Xử lý máy đào coin nội bộ & DDoS Botnet",
+        q1: {
+          score: 3.0,
+          cdr: "SO4.2",
+          title: "Câu 1 (SO4.2 ABET - 3 điểm): Xử lý khi đồng nghiệp Pentest đối tác không được cấp phép",
+          content: "Bạn nhận thấy đồng nghiệp đang sử dụng công cụ của công ty để pentest vào website của một đối tác mà không có sự cho phép bằng văn bản. Hãy phân tích các rủi ro về mặt đạo đức, pháp lý và kinh doanh. Bạn sẽ xử lý như thế nào?",
+          solution: `<strong>1. Phân tích rủi ro:</strong><br/>
+          - <em>Đạo đức:</em> Lạm dụng quyền hạn và công cụ công ty cho hành vi sai trái.<br/>
+          - <em>Pháp lý:</em> Vi phạm Luật An ninh mạng Việt Nam (hành vi tấn công mạng trái phép có thể bị xử lý hình sự).<br/>
+          - <em>Kinh doanh:</em> Gây mất uy tín thương hiệu, hủy hoại quan hệ đối tác, công ty có thể bị kiện đòi bồi thường thiệt hại.<br/><br/>
+          <strong>2. Hành động xử lý:</strong><br/>
+          - Yêu cầu đồng nghiệp dừng lại ngay lập tức và giải thích các nguy cơ pháp lý nghiêm trọng.<br/>
+          - Nếu đồng nghiệp không nghe, báo cáo ngay sự việc cho Trưởng phòng An ninh thông tin để ngăn chặn kịp thời.`
+        },
+        q2: {
+          score: 4.0,
+          cdr: "SO6.2",
+          title: "Câu 2 (SO6.2 ABET - 4 điểm): Quy trình xử lý nhân viên dùng tài nguyên công ty đào tiền điện tử",
+          content: "Là quản trị viên mạng, bạn phát hiện nhân viên đang dùng tài nguyên máy tính công ty để đào tiền điện tử (Crypto Mining). Hãy trình bày các bước kỹ thuật và quản lý để giải quyết vấn đề này.",
+          solution: `<strong>Bước 1 (Thu thập bằng chứng):</strong> Dùng công cụ Wireshark/PRTG giám sát lưu lượng bất thường; phân tích log tường lửa tìm kết nối đến các Stratum mining pool; chụp ảnh tiến trình tiêu thụ 100% CPU/GPU.<br/>
+          <strong>Bước 2 (Ngăn chặn khẩn cấp):</strong> Tạo quy tắc Firewall chặn IP/Domain của mining pool; cô lập máy trạm khỏi mạng nội bộ.<br/>
+          <strong>Bước 3 (Xử lý theo chính sách):</strong> Lập biên bản sự cố gửi cho phòng Nhân sự (HR) và quản lý trực tiếp theo quy định nội bộ.<br/>
+          <strong>Bước 4 (Khắc phục dài hạn):</strong> Cập nhật bộ lọc URL trên NGFW; cài giải pháp EDR để phát hiện mã độc đào coin (Cryptojacking); ban hành văn bản nhắc nhở chính sách sử dụng tài nguyên công ty.`
+        },
+        q3: {
+          score: 3.0,
+          cdr: "SO6.1",
+          title: "Câu 3 (SO6.1 ABET - 3 điểm): Bài toán Botnet DoS biến thể băng thông cao",
+          content: "Một mạng botnet tấn công gồm:\n- 15.000 PC (4 Mbps/máy, 70% online)\n- 60.000 Camera IoT (1 Mbps/máy, 80% online)\n- 1.500 Máy chủ doanh nghiệp (100 Mbps/máy, 90% online)\nOverhead mạng: 20%. Kích thước gói tin trung bình: 1200 byte.\nMục tiêu có băng thông 80 Gbps, khả năng xử lý Firewall: 8 Mpps.\nYêu cầu:\n1. Tính tổng băng thông thực tế (Gbps).\n2. Tính số lượng gói/giây (Mpps).\n3. Đánh giá tình trạng sập của hệ thống.\n4. Nếu bật WAF/CDN lọc được 65% lưu lượng, hệ thống có duy trì hoạt động không?",
+          solution: `<strong>Lời giải:</strong><br/>
+          1. Băng thông cơ bản:<br/>
+          - PC: 15.000 × 0.7 × 4 = 42.000 Mbps<br/>
+          - IoT: 60.000 × 0.8 × 1 = 48.000 Mbps<br/>
+          - Server: 1.500 × 0.9 × 100 = 135.000 Mbps<br/>
+          Tổng = 225.000 Mbps = 225 Gbps.<br/>
+          Băng thông thực tế (Overhead 20%): $$225 \\times 1.2 = 270\\text{ Gbps}$$.<br/>
+          2. PPS (Gói 1200 byte = 9600 bit):<br/>
+          $$PPS = \\frac{270 \\times 10^9}{9600} = 28.125.000\\text{ pps} = 28.125\\text{ Mpps}$$.<br/>
+          3. Hệ thống sập nặng do cả 2 yếu tố (270 > 80 Gbps và 28.125 > 8 Mpps).<br/>
+          4. Sau khi lọc 65% (còn lại 35%):<br/>
+          - Băng thông = 270 × 0.35 = 94.5 Gbps (> 80 Gbps -> Quá tải)<br/>
+          - PPS = 28.125 × 0.35 = 9.84 Mpps (> 8 Mpps -> Quá tải)<br/>
+          => Hệ thống vẫn bị sập!`
+        }
+      },
+      {
+        id: "CKC-05",
+        name: "Đề 05: Đạo đức bẻ khóa WiFi hàng xóm, Xử lý sự cố Phishing & Crack Mật khẩu",
+        q1: {
+          score: 3.0,
+          cdr: "SO4.2",
+          title: "Câu 1 (SO4.2 ABET - 3 điểm): Giải thích đạo đức khi bạn bè dùng tool bẻ khóa Wi-Fi",
+          content: "Bạn bè của bạn đang thảo luận về việc sử dụng một công cụ bẻ khóa Wi-Fi để truy cập Internet miễn phí từ mạng nhà hàng xóm. Dưới góc độ đạo đức nghề nghiệp, bạn sẽ giải thích cho họ như thế nào về hành vi này?",
+          solution: `<strong>1. Góc độ pháp luật:</strong> Đây là hành vi truy cập trái phép vào mạng viễn thông và thiết bị của người khác mà không có sự đồng thuận, vi phạm Luật An ninh mạng.<br/>
+          <strong>2. Đạo đức nghề nghiệp:</strong> Lạm dụng kiến thức kỹ thuật CNTT để xâm phạm tài sản người khác là đi ngược lại lời thề đạo đức nghề nghiệp.<br/>
+          <strong>3. Rủi ro tự rước họa:</strong> Kết nối vào mạng của người khác có nguy cơ bị chính chủ nhà đặt bẫy Honeypot hoặc bắt trọn gói tin, lây nhiễm mã độc.<br/>
+          <strong>4. Lời khuyên:</strong> Nên đăng ký gói cước Internet hợp pháp của các nhà mạng.`
+        },
+        q2: {
+          score: 4.0,
+          cdr: "SO6.2",
+          title: "Câu 2 (SO6.2 ABET - 4 điểm): Kế hoạch phản ứng sự cố người dùng dính Phishing",
+          content: "Một nhân viên công ty báo cáo đã lỡ nhấp vào link và nhập thông tin trên một email lừa đảo (Phishing). Hãy trình bày kế hoạch xử lý sự cố bao gồm các kỹ thuật và công cụ cần áp dụng.",
+          solution: `<strong>Bước 1 (Hành động tức thì):</strong> Ngắt kết nối mạng máy tính bị ảnh hưởng (rút dây LAN, tắt WiFi); Lập tức đổi mật khẩu tài khoản từ thiết bị an toàn và thu hồi mọi Active Sessions.<br/>
+          <strong>Bước 2 (Điều tra kỹ thuật):</strong> Phân tích Email Header để tìm IP nguồn và Mail Server gửi; quét máy bằng Antivirus/EDR; báo cáo URL độc hại cho Google Safe Browsing/PhishTank.<br/>
+          <strong>Bước 3 (Khoanh vùng ngăn chặn):</strong> Kiểm tra trên Email Gateway xem có bao nhiêu nhân viên khác nhận được thư này để xóa triệt để khỏi hộp thư; tạo rule chặn domain người gửi trên Firewall.<br/>
+          <strong>Bước 4 (Đào tạo & Khắc phục):</strong> Gửi cảnh báo toàn công ty và tổ chức diễn tập nhận diện Phishing định kỳ.`
+        },
+        q3: {
+          score: 3.0,
+          cdr: "SO6.1",
+          title: "Câu 3 (SO6.1 ABET - 3 điểm): Tính toán phá mật khẩu PIN và ký tự đặc biệt",
+          content: "Một két sắt điện tử sử dụng mã bảo mật:\n- 4 ký tự đầu: số từ 0–9\n- 2 ký tự tiếp: chữ thường a–z\n- 1 ký tự cuối: ký tự đặc biệt trong tập 10 ký tự (!@#$%^&*())\nHacker có 1 siêu máy tính thử được 5 × 10⁹ thử/giây. Hệ thống chặn 1 giây sau mỗi 1 giây thử. 15% mã đơn giản đã bị loại bỏ.\nYêu cầu: Tính không gian ban đầu, không gian sau khi loại, tốc độ thực tế và thời gian xấu nhất.",
+          solution: `<strong>Lời giải:</strong><br/>
+          1. Không gian ban đầu: $$N = 10^4 \\times 26^2 \\times 10 = 10.000 \\times 676 \\times 10 = 67.600.000$$ mã.<br/>
+          2. Sau khi loại 15% (còn 85%): $$N_1 = 67.600.000 \\times 0.85 = 57.460.000$$ mã.<br/>
+          3. Tốc độ lý thuyết: $$5 \\times 10^9$$ mã/s.<br/>
+          Chu kỳ: 1s chạy + 1s nghỉ = 2s -> Hiệu suất: $$0.5$$.<br/>
+          Tốc độ thực tế: $$H_1 = 5 \\times 10^9 \\times 0.5 = 2.5 \\times 10^9$$ mã/s.<br/>
+          4. Thời gian xấu nhất: $$T = \\frac{57.460.000}{2.5 \\times 10^9} \\approx 0.023$$ giây.`
+        }
+      },
+      {
+        id: "CKC-06",
+        name: "Đề 06: Báo cáo lỗ hổng có trách nhiệm, Đối phó SYN Flood DDoS & Botnet",
+        q1: {
+          score: 3.0,
+          cdr: "SO4.2",
+          title: "Câu 1 (SO4.2 ABET - 3 điểm): Nguyên tắc 'Báo cáo lỗ hổng có trách nhiệm' (Responsible Disclosure)",
+          content: "Một sinh viên phát hiện lỗi SQL Injection trong website của trường và lợi dụng để tải dữ liệu sinh viên. Hành vi này vi phạm những quy tắc đạo đức nào? Nếu là sinh viên đó, bạn nên hành xử thế nào theo chuẩn Responsible Disclosure?",
+          solution: `<strong>1. Vi phạm đạo đức & pháp luật:</strong> Vi phạm nguyên tắc bảo mật và tôn trọng dữ liệu cá nhân; Lạm dụng lỗ hổng xâm nhập trái phép vào hệ thống thông tin (vi phạm Luật An ninh mạng).<br/>
+          <strong>2. Hành xử chuẩn mực (Responsible Disclosure):</strong><br/>
+          - Dừng lại ngay lập tức: Tuyệt đối không khai thác sâu, không tải hoặc phát tán dữ liệu sinh viên.<br/>
+          - Bảo mật thông tin: Không công khai lỗi lên mạng xã hội.<br/>
+          - Lập báo cáo kỹ thuật: Ghi nhận bằng chứng Proof of Concept (PoC) một cách văn minh, gửi riêng tư cho Trung tâm CNTT nhà trường.<br/>
+          - Cho đơn vị một khoảng thời gian hợp lý (thường 30-90 ngày) để vá lỗi.`
+        },
+        q2: {
+          score: 4.0,
+          cdr: "SO6.2",
+          title: "Câu 2 (SO6.2 ABET - 4 điểm): Kỹ thuật nhận diện và giảm thiểu tấn công SYN Flood",
+          content: "Hệ thống web của công ty đang bị tấn công từ chối dịch vụ phân tán (DDoS) dưới dạng SYN Flood. Hãy nêu các kỹ thuật và công cụ để nhận diện và xử lý tình huống này.",
+          solution: `<strong>1. Nhận diện:</strong> Dùng lệnh <code>netstat -n -p tcp | grep SYN_REC</code> hoặc công cụ NetFlow Analyzer để phát hiện số lượng kết nối nửa mở (Half-open) tăng đột biến bất thường.<br/><br/>
+          <strong>2. Giảm thiểu tại máy chủ:</strong> Kích hoạt cơ chế <strong>SYN Cookies</strong> trong nhân Linux (<code>sysctl -w net.ipv4.tcp_syncookies=1</code>) để không tốn bộ đệm hàng đợi.<br/><br/>
+          <strong>3. Giảm thiểu tại hạ tầng mạng:</strong> Cấu hình TCP Rate Limiting trên Tường lửa/Cân bằng tải; chuyển hướng DNS qua các đơn vị chống DDoS chuyên dụng như Cloudflare/AWS Shield.`
+        },
+        q3: {
+          score: 3.0,
+          cdr: "SO6.1",
+          title: "Câu 3 (SO6.1 ABET - 3 điểm): Tính toán Botnet DDoS có CDN cứu sống hệ thống",
+          content: "Botnet gồm: 10.000 PC (2 Mbps, 80%), 20.000 IoT (500 Kbps, 70%), 500 Server (20 Mbps, 90%). Overhead 20%, kích thước gói 1000 byte. Hệ thống mục tiêu: Băng thông 30 Gbps, Firewall xử lý 4 Mpps. Yêu cầu: Tính Băng thông thực tế, PPS, đánh giá sập và kiểm tra nếu CDN giảm 85% traffic thì hệ thống có sống không?",
+          solution: `<strong>Lời giải:</strong><br/>
+          1. Băng thông:<br/>
+          - PC: 10.000 × 0.8 × 2 = 16.000 Mbps<br/>
+          - IoT: 20.000 × 0.7 × 0.5 = 7.000 Mbps<br/>
+          - Server: 500 × 0.9 × 20 = 9.000 Mbps<br/>
+          Tổng = 32.000 Mbps = 32 Gbps.<br/>
+          Băng thông thực tế: $$32 \\times 1.2 = 38.4\\text{ Gbps}$$.<br/>
+          2. PPS: $$PPS = \\frac{38.4 \\times 10^9}{8000} = 4.800.000\\text{ pps} = 4.8\\text{ Mpps}$$.<br/>
+          3. Đánh giá: Băng thông (38.4 > 30 Gbps) và PPS (4.8 > 4 Mpps) => Hệ thống bị sập.<br/>
+          4. Khi CDN giảm 85% (còn lại 15%):<br/>
+          - Băng thông còn = 38.4 × 0.15 = 5.76 Gbps (< 30 Gbps -> An toàn)<br/>
+          - PPS còn = 4.8 × 0.15 = 0.72 Mpps (< 4 Mpps -> An toàn)<br/>
+          => <strong>Kết luận:</strong> Hệ thống được cứu sống hoàn toàn!`
+        }
+      },
+      {
+        id: "CKC-07",
+        name: "Đề 07: Chia sẻ mật khẩu quản trị, Scanning Nmap & Nessus, Crack Mật khẩu",
+        q1: {
+          score: 3.0,
+          cdr: "SO4.2",
+          title: "Câu 1 (SO4.2 ABET - 3 điểm): Rủi ro đạo đức và kỹ thuật khi chia sẻ mật khẩu quản trị",
+          content: "Một đồng nghiệp muốn chia sẻ mật khẩu tài khoản quản trị tường lửa dùng chung cho đội bảo trì để 'tiện thao tác'. Hãy phân tích rủi ro đạo đức và kỹ thuật của hành động này. Theo bạn, giải pháp đúng đắn nên là gì?",
+          solution: `<strong>1. Rủi ro kỹ thuật & Đạo đức:</strong> Mất tính quy trách nhiệm (Non-repudiation) - khi xảy ra sự cố hoặc cấu hình sai không thể xác định ai là thủ phạm; Nguy cơ rò rỉ thông tin mật ra ngoài; Vi phạm nguyên tắc bảo mật tối thiểu.<br/><br/>
+          <strong>2. Giải pháp đúng đắn:</strong> Tuyệt đối không dùng chung tài khoản Root/Admin. Cần tạo các tài khoản riêng biệt cho từng thành viên bảo trì; áp dụng nguyên tắc phân quyền tối thiểu (Least Privilege); cấu hình tự động thu hồi quyền sau khi hết ca bảo trì.`
+        },
+        q2: {
+          score: 4.0,
+          cdr: "SO6.2",
+          title: "Câu 2 (SO6.2 ABET - 4 điểm): Quy trình Scanning và Vulnerability Assessment trên Web Server mới",
+          content: "Bạn được giao nhiệm vụ đánh giá an toàn cho một máy chủ web mới trước khi go-live. Hãy trình bày các bước và công cụ sử dụng trong giai đoạn Scanning và Vulnerability Analysis.",
+          solution: `<strong>Giai đoạn 1 (Scanning):</strong> Dùng Nmap để quét các cổng mở và dịch vụ (<code>nmap -sV -sC -p- -O &lt;IP&gt;</code>) để nhận diện phiên bản OS và web server.<br/><br/>
+          <strong>Giai đoạn 2 (Vulnerability Analysis):</strong> Dùng công cụ chuyên dụng như Nessus hoặc OpenVAS để tự động rà quét các lỗ hổng đã biết (CVE), mật khẩu mặc định, cấu hình SSL yếu; sử dụng OWASP ZAP để quét lỗ hổng ứng dụng web.<br/><br/>
+          <strong>Giai đoạn 3 (Báo cáo & Khắc phục):</strong> Phân loại lỗ hổng theo mức độ rủi ro CVSS (Critical, High, Medium, Low) và ưu tiên vá lỗi nghiêm trọng trước khi nghiệm thu.`
+        },
+        q3: {
+          score: 3.0,
+          cdr: "SO6.1",
+          title: "Câu 3 (SO6.1 ABET - 3 điểm): Tính toán Crack Mật khẩu 7 ký tự",
+          content: "Cấu trúc mật khẩu: 2 ký tự đầu chữ hoa (A–Z), 3 ký tự tiếp số (0–9), 2 ký tự cuối chữ thường (a–z). 2 GPU có tốc độ mỗi máy 3 × 10⁹ thử/s. Hệ thống chạy 2 giây bị chặn 1 giây. Loại bỏ 10% mật khẩu yếu. Yêu cầu tính toán đầy đủ các thông số.",
+          solution: `<strong>Lời giải:</strong><br/>
+          1. Không gian ban đầu: $$N = 26^2 \\times 10^3 \\times 26^2 = 676 \\times 1.000 \\times 676 = 456.976.000$$ mật khẩu.<br/>
+          2. Loại 10% mật khẩu yếu (còn 90%): $$N_1 = 456.976.000 \\times 0.9 = 411.278.400$$ mật khẩu.<br/>
+          3. Tốc độ lý thuyết: $$2 \\times (3 \\times 10^9) = 6 \\times 10^9$$ hash/s.<br/>
+          Hiệu suất chu kỳ (2s chạy / 3s tổng): $$E = \\frac{2}{3}$$.<br/>
+          Tốc độ thực tế: $$H_1 = 6 \\times 10^9 \\times \\frac{2}{3} = 4 \\times 10^9$$ hash/s.<br/>
+          4. Thời gian xấu nhất: $$T = \\frac{411.278.400}{4 \\times 10^9} \\approx 0.103$$ giây.`
+        }
+      },
+      {
+        id: "CKC-08",
+        name: "Đề 08: Giám sát ngầm nhân viên, Xây dựng chính sách Startup BYOD & Botnet",
+        q1: {
+          score: 3.0,
+          cdr: "SO4.2",
+          title: "Câu 1 (SO4.2 ABET - 3 điểm): Quyết định cài phần mềm giám sát người dùng (Keylogger/Camera)",
+          content: "Khi thiết kế hệ thống bảo mật, có nên cài đặt phần mềm giám sát người dùng (keylogger, theo dõi camera ngầm) mà chưa được sự đồng ý của nhân viên không? Hãy nêu cách ra quyết định phù hợp với đạo đức nghề nghiệp và pháp luật.",
+          solution: `<strong>1. Không được triển khai ngầm:</strong> Việc cài cắm phần mềm theo dõi mà không công khai vi phạm nghiêm trọng quyền riêng tư cá nhân và trái với quy định bảo vệ dữ liệu cá nhân theo pháp luật.<br/><br/>
+          <strong>2. Cách ra quyết định đúng đắn:</strong><br/>
+          - Phải ban hành 'Chính sách Giám sát và Sử dụng Thiết bị Công ty' rõ ràng bằng văn bản, có chữ ký đồng thuận của nhân viên khi nhận việc.<br/>
+          - Chỉ giám sát trên máy tính thuộc quyền sở hữu của công ty, chỉ phục vụ mục đích an ninh doanh nghiệp, không can thiệp vào tài khoản cá nhân.<br/>
+          - Cân bằng giữa an ninh thông tin và sự tôn trọng quyền con người.`
+        },
+        q2: {
+          score: 4.0,
+          cdr: "SO6.2",
+          title: "Câu 2 (SO6.2 ABET - 4 điểm): Thiết kế Chính sách An toàn Thông tin cho Startup 20 nhân viên làm việc từ xa",
+          content: "Một startup 20 nhân sự làm việc từ xa. Hãy xây dựng Chính sách an toàn thông tin bao gồm: Quản lý mật khẩu, Thiết bị cá nhân (BYOD) và Kết nối mạng an toàn.",
+          solution: `<strong>1. Chính sách Mật khẩu:</strong> Độ dài tối thiểu 12 ký tự, đủ chữ hoa, thường, số, ký tự đặc biệt; bắt buộc bật xác thực đa yếu tố (MFA) cho mọi nền tảng (Google Workspace, Github); không dùng lại mật khẩu cũ.<br/><br/>
+          <strong>2. Chính sách BYOD (Bring Your Own Device):</strong> Máy tính cá nhân phải bật BitLocker/FileVault mã hóa ổ đĩa; cài đặt phần mềm Antivirus có bản quyền; cài phần mềm MDM để có thể xóa dữ liệu công ty từ xa khi mất máy.<br/><br/>
+          <strong>3. Chính sách Kết nối Mạng:</strong> Bắt buộc dùng VPN có mã hóa khi truy cập máy chủ nội bộ; nghiêm cấm kết nối làm việc qua WiFi công cộng không có mật khẩu trừ khi bật VPN.`
+        },
+        q3: {
+          score: 3.0,
+          cdr: "SO6.1",
+          title: "Câu 3 (SO6.1 ABET - 3 điểm): Bài toán Botnet DoS với Firewall giới hạn",
+          content: "Botnet gồm 10.000 PC (3 Mbps, 80%), 40.000 IoT (1 Mbps, 50%). Overhead mạng 25%, kích thước gói 1000 byte. Hệ thống: Băng thông 50 Gbps, Firewall xử lý 6 Mpps. Tính tổng băng thông thực, PPS và đánh giá nguy cơ sập.",
+          solution: `<strong>Lời giải:</strong><br/>
+          1. Băng thông: <br/>
+          - PC: 10.000 × 0.8 × 3 = 24.000 Mbps<br/>
+          - IoT: 40.000 × 0.5 × 1 = 20.000 Mbps<br/>
+          Tổng = 44.000 Mbps = 44 Gbps.<br/>
+          Băng thông thực (Overhead 25%): $$44 \\times 1.25 = 55\\text{ Gbps}$$.<br/>
+          2. PPS: $$PPS = \\frac{55 \\times 10^9}{8000} = 6.875.000\\text{ pps} = 6.875\\text{ Mpps}$$.<br/>
+          3. Đánh giá: Cả băng thông (55 > 50 Gbps) và PPS (6.875 > 6 Mpps) đều vượt ngưỡng -> Hệ thống bị tê liệt hoàn toàn.`
+        }
+      },
+      {
+        id: "CKC-09",
+        name: "Đề 09: Bảo vệ dữ liệu cá nhân khi làm VA, Cấu hình Firewall Web/DB & Crack Mật khẩu",
+        q1: {
+          score: 3.0,
+          cdr: "SO4.2",
+          title: "Câu 1 (SO4.2 ABET - 3 điểm): Đạo đức và Pháp lý khi tiếp cận dữ liệu người dùng trong lúc đánh giá bảo mật",
+          content: "Trong quá trình đánh giá bảo mật (Vulnerability Assessment), bạn được cấp quyền truy cập tạm thời vào dữ liệu người dùng. Bạn cần tuân thủ những nguyên tắc đạo đức và pháp lý nào để tránh vi phạm quyền riêng tư?",
+          solution: `<strong>1. Nguyên tắc đạo đức & pháp lý:</strong><br/>
+          - <em>Đúng mục đích (Need-to-know):</em> Chỉ truy cập dữ liệu trong phạm vi công việc đã được lãnh đạo phê duyệt.<br/>
+          - <em>Tuyệt đối bảo mật:</em> Không sao chép, tải về thiết bị cá nhân hoặc chia sẻ dữ liệu người dùng cho bất kỳ bên thứ ba nào.<br/>
+          - <em>Hủy bỏ kịp thời:</em> Xóa sạch mọi dữ liệu tạm thời ngay sau khi hoàn tất kiểm tra an toàn.<br/>
+          - <em>Tuân thủ pháp luật:</em> Nghiêm túc chấp hành Nghị định 13/2023/NĐ-CP về bảo vệ dữ liệu cá nhân và Luật An ninh mạng 2018.`
+        },
+        q2: {
+          score: 4.0,
+          cdr: "SO6.2",
+          title: "Câu 2 (SO6.2 ABET - 4 điểm): Viết Bảng Luật Tường Lửa (Firewall Rules) cho Mô hình Web & Database",
+          content: "Công ty bạn có máy chủ Web (IP 1.2.3.4) và máy chủ CSDL (IP 10.0.0.5). Hãy viết bảng quy tắc tường lửa (Firewall Rules) cơ bản áp dụng chính sách: Cho phép Internet vào Web (port 80, 443); chỉ cho phép Web vào DB (port 3306); chặn toàn bộ truy cập khác.",
+          solution: `<strong>Bảng quy tắc Tường lửa chuẩn (Firewall Rule Base):</strong><br/>
+          <table class="w-full text-xs font-mono border border-slate-700 my-2">
+            <tr class="bg-slate-800 text-sky-300"><th class="p-1.5 border">Rule ID</th><th class="p-1.5 border">Source IP</th><th class="p-1.5 border">Dest IP</th><th class="p-1.5 border">Port</th><th class="p-1.5 border">Action</th></tr>
+            <tr><td class="p-1.5 border">Rule 1</td><td class="p-1.5 border">ANY</td><td class="p-1.5 border">1.2.3.4</td><td class="p-1.5 border">80, 443 (HTTP/S)</td><td class="p-1.5 border text-emerald-400 font-bold">ALLOW</td></tr>
+            <tr><td class="p-1.5 border">Rule 2</td><td class="p-1.5 border">1.2.3.4</td><td class="p-1.5 border">10.0.0.5</td><td class="p-1.5 border">3306 (MySQL)</td><td class="p-1.5 border text-emerald-400 font-bold">ALLOW</td></tr>
+            <tr><td class="p-1.5 border">Rule 3</td><td class="p-1.5 border">ANY</td><td class="p-1.5 border">ANY</td><td class="p-1.5 border">ANY</td><td class="p-1.5 border text-rose-400 font-bold">DENY</td></tr>
+          </table>
+          <em>Giải thích:</em> Rule 3 áp dụng nguyên tắc Default Deny để chặn toàn bộ các truy cập trái phép từ Internet vào trực tiếp CSDL.`
+        },
+        q3: {
+          score: 3.0,
+          cdr: "SO6.1",
+          title: "Câu 3 (SO6.1 ABET - 3 điểm): Bài toán Brute-force mật khẩu có cơ chế chặn tăng cường",
+          content: "Hệ thống mật khẩu: 2 ký tự đầu chữ thường (a–z), 4 ký tự tiếp chữ số (0–9), 1 ký tự cuối trong tập 36 ký tự (a–z, 0–9). Hacker có 3 GPU, mỗi GPU đạt 2 × 10⁹ thử/giây. Sau 1 giây thử, hệ thống chặn 1 giây. Loại bỏ 25% mật khẩu dễ đoán. Tính thời gian crack tối đa.",
+          solution: `<strong>Lời giải:</strong><br/>
+          1. Không gian ban đầu: $$N = 26^2 \\times 10^4 \\times 36 = 676 \\times 10.000 \\times 36 = 243.360.000$$ mật khẩu.<br/>
+          2. Sau khi loại 25% (còn 75%): $$N_1 = 243.360.000 \\times 0.75 = 182.520.000$$ mật khẩu.<br/>
+          3. Tốc độ 3 GPU lý thuyết: $$3 \\times (2 \\times 10^9) = 6 \\times 10^9$$ hash/s.<br/>
+          Chu kỳ: 1s chạy + 1s chặn = 2s -> Hiệu suất: 0.5.<br/>
+          Tốc độ thực tế: $$H_1 = 6 \\times 10^9 \\times 0.5 = 3 \\times 10^9$$ hash/s.<br/>
+          4. Thời gian crack xấu nhất: $$T = \\frac{182.520.000}{3 \\times 10^9} \\approx 0.061$$ giây.`
+        }
+      },
+      {
+        id: "CKC-10",
+        name: "Đề 10: Tổng hợp SO4.2 Đạo đức, So sánh IDS Signature vs Anomaly & Botnet",
+        q1: {
+          score: 3.0,
+          cdr: "SO4.2",
+          title: "Câu 1 (SO4.2 ABET - 3 điểm): Quyết định xử lý rò rỉ dữ liệu khách hàng theo chuẩn mực đạo đức",
+          content: "Bạn phát hiện hệ thống cơ sở dữ liệu của công ty đã bị kẻ lạ trích xuất trái phép thông tin CCCD và thẻ của khách hàng từ 1 tuần trước mà chưa ai hay biết. Lãnh đạo đề nghị 'âm thầm khắc phục và không thông báo cho khách hàng'. Bạn sẽ hành xử thế nào?",
+          solution: `<strong>1. Trách nhiệm đạo đức và xã hội:</strong> Che giấu sự cố rò rỉ dữ liệu tài chính gây nguy cơ khôn lường cho khách hàng (bị vay tiền nợ xấu, lừa đảo chiếm đoạt tài sản).<br/><br/>
+          <strong>2. Tuân thủ pháp luật:</strong> Theo Luật An ninh mạng và Nghị định bảo vệ dữ liệu cá nhân, doanh nghiệp bắt buộc phải thông báo cho Cục An ninh mạng và khách hàng trong thời hạn luật định.<br/><br/>
+          <strong>3. Giải pháp hành động:</strong><br/>
+          - Khuyên ban lãnh đạo công khai minh bạch sự cố một cách chuyên nghiệp kèm lời xin lỗi và các khuyến cáo khẩn cấp cho khách hàng (đổi mã PIN, khóa thẻ).<br/>
+          - Triển khai ngay đội ngũ ứng cứu sự cố để điều tra nguồn gốc xâm nhập và vá triệt để lỗ hổng.`
+        },
+        q2: {
+          score: 4.0,
+          cdr: "SO6.2",
+          title: "Câu 2 (SO6.2 ABET - 4 điểm): So sánh IDS Signature-based và Anomaly-based",
+          content: "So sánh chi tiết hai phương pháp phát hiện của Hệ thống phát hiện xâm nhập (IDS): 'Phát hiện dựa trên dấu hiệu' (Signature-based) và 'Phát hiện dựa trên sự bất thường' (Anomaly-based).",
+          solution: `<strong>1. Signature-based (Dựa trên dấu hiệu):</strong><br/>
+          - <em>Nguyên lý:</em> So sánh lưu lượng mạng với cơ sở dữ liệu mẫu mã độc/tấn công đã biết (tương tự phần mềm diệt virus).<br/>
+          - <em>Ưu điểm:</em> Độ chính xác rất cao, tỷ lệ báo động giả (False Positive) rất thấp.<br/>
+          - <em>Nhược điểm:</em> Hoàn toàn vô dụng trước các cuộc tấn công Zero-day hoặc mã độc bị đa hình biến đổi.<br/><br/>
+          <strong>2. Anomaly-based (Dựa trên bất thường):</strong><br/>
+          - <em>Nguyên lý:</em> Xây dựng hồ sơ hành vi 'bình thường' (Baseline) của hệ thống bằng Machine Learning/Thống kê, cảnh báo khi có lưu lượng lệch chuẩn.<br/>
+          - <em>Ưu điểm:</em> Có khả năng phát hiện các cuộc tấn công Zero-day chưa từng xuất hiện.<br/>
+          - <em>Nhược điểm:</em> Tỷ lệ báo động giả rất cao (ví dụ: ngày lễ người dùng mua sắm đột biến cũng bị báo là DDoS).`
+        },
+        q3: {
+          score: 3.0,
+          cdr: "SO6.1",
+          title: "Câu 3 (SO6.1 ABET - 3 điểm): Bài toán Botnet DoS tổng hợp nâng cao",
+          content: "Botnet gồm: 25.000 PC (2.5 Mbps, 80%), 40.000 IoT (1 Mbps, 70%), 1.000 Server (40 Mbps, 90%). Overhead mạng 25%, kích thước gói 1000 byte. Hệ thống: Băng thông 60 Gbps, Firewall xử lý 8 Mpps. Tính tổng băng thông thực, PPS và đánh giá nếu CDN lọc 75% traffic thì hệ thống có an toàn không?",
+          solution: `<strong>Lời giải:</strong><br/>
+          1. Băng thông cơ bản:<br/>
+          - PC: 25.000 × 0.8 × 2.5 = 50.000 Mbps<br/>
+          - IoT: 40.000 × 0.7 × 1 = 28.000 Mbps<br/>
+          - Server: 1.000 × 0.9 × 40 = 36.000 Mbps<br/>
+          Tổng = 114.000 Mbps = 114 Gbps.<br/>
+          Băng thông thực (Overhead 25%): $$114 \\times 1.25 = 142.5\\text{ Gbps}$$.<br/>
+          2. PPS: $$PPS = \\frac{142.5 \\times 10^9}{8000} = 17.812.500\\text{ pps} \\approx 17.81\\text{ Mpps}$$.<br/>
+          3. Đánh giá: Băng thông (142.5 > 60 Gbps) và PPS (17.81 > 8 Mpps) => Sập hệ thống.<br/>
+          4. Khi có CDN giảm 75% (còn 25%):<br/>
+          - Băng thông còn = 142.5 × 0.25 = 35.625 Gbps (< 60 Gbps -> OK)<br/>
+          - PPS còn = 17.8125 × 0.25 = 4.45 Mpps (< 8 Mpps -> OK)<br/>
+          => <strong>Kết luận:</strong> Hệ thống được bảo vệ và sống sót tốt!`
+        }
+      }
+    ];
+
+    /* =======================================================================
+       9. POPULATE & RENDER THEORY ACCORDION
+    ======================================================================= */
+    let currentChapterFilter = 'all';
+
+    function renderTheoryQuestions() {
+      const container = document.getElementById('theory-accordion-container');
+      const searchVal = document.getElementById('theory-search').value.toLowerCase().trim();
+      container.innerHTML = '';
+
+      let count = 0;
+      theoryQuestionBank.forEach((item) => {
+        const matchChapter = (currentChapterFilter === 'all' || item.chapter === currentChapterFilter);
+        const matchSearch = item.title.toLowerCase().includes(searchVal) || 
+                            item.question.toLowerCase().includes(searchVal) || 
+                            item.answer.toLowerCase().includes(searchVal);
+
+        if (matchChapter && matchSearch) {
+          count++;
+          const card = document.createElement('div');
+          card.className = "bg-app-card border border-app-border rounded-xl overflow-hidden transition-all duration-200 hover:border-slate-500 shadow-sm";
+          card.innerHTML = `
+            <button onclick="toggleAccordion('acc-${item.id}')" class="w-full p-4 text-left flex items-center justify-between gap-3 bg-app-card hover:bg-slate-700/50 transition-colors">
+              <div class="flex items-center space-x-3">
+                <span class="text-xs px-2.5 py-1 rounded bg-slate-900 text-sky-400 font-mono font-bold border border-slate-700">${item.id}</span>
+                <span class="text-sm font-semibold text-white">${item.title}</span>
+              </div>
+              <span id="acc-icon-${item.id}" class="text-xs text-slate-400 font-mono">➕</span>
+            </button>
+            <div id="acc-${item.id}" class="hidden p-4 pt-1 border-t border-app-border bg-slate-900/60 text-xs sm:text-sm space-y-3">
+              <div class="p-3.5 bg-slate-900 rounded-lg border border-slate-800 text-slate-200 font-medium leading-relaxed">
+                <strong class="text-sky-400 font-mono">ĐỀ BÀI:</strong> ${item.question}
+              </div>
+              <div class="p-4 bg-emerald-950/20 rounded-lg border border-emerald-900/40 text-slate-200 leading-relaxed space-y-2">
+                <div class="font-bold text-emerald-400 font-mono flex items-center space-x-1.5">
+                  <span>💡 GỢI Ý ĐÁP ÁN CHUẨN:</span>
+                </div>
+                <div>${item.answer}</div>
+              </div>
+            </div>
+          `;
+          container.appendChild(card);
+        }
+      });
+
+      document.getElementById('question-count-badge').textContent = `${count} câu hỏi`;
+    }
+
+    function toggleAccordion(id) {
+      playBeep(480, 'sine', 0.05, 0.04);
+      const content = document.getElementById(id);
+      const icon = document.getElementById('acc-icon-' + id.replace('acc-', ''));
+      if (content.classList.contains('hidden')) {
+        content.classList.remove('hidden');
+        if (icon) icon.textContent = '➖';
+      } else {
+        content.classList.add('hidden');
+        if (icon) icon.textContent = '➕';
+      }
+    }
+
+    let isAllOpen = false;
+    function toggleAllAccordions() {
+      playBeep(520, 'sine', 0.08);
+      isAllOpen = !isAllOpen;
+      theoryQuestionBank.forEach(item => {
+        const content = document.getElementById(`acc-${item.id}`);
+        const icon = document.getElementById(`acc-icon-${item.id}`);
+        if (content) {
+          if (isAllOpen) {
+            content.classList.remove('hidden');
+            if (icon) icon.textContent = '➖';
+          } else {
+            content.classList.add('hidden');
+            if (icon) icon.textContent = '➕';
+          }
+        }
+      });
+    }
+
+    function filterChapter(chap) {
+      playBeep(400, 'triangle', 0.06);
+      currentChapterFilter = chap;
+      document.querySelectorAll('.chapter-btn').forEach(btn => {
+        btn.classList.remove('bg-sky-600', 'text-white', 'shadow-sm');
+        btn.classList.add('bg-app-card', 'text-slate-300');
+      });
+      event.target.classList.remove('bg-app-card', 'text-slate-300');
+      event.target.classList.add('bg-sky-600', 'text-white', 'shadow-sm');
+      renderTheoryQuestions();
+    }
+
+    function filterTheoryQuestions() {
+      renderTheoryQuestions();
+    }
+
+    /* =======================================================================
+       10. MOCK EXAM ENGINE, LIVE 90 MIN TIMER & LOCALSTORAGE SAVE
+    ======================================================================= */
+    let currentMockId = "CKC-01";
+    let examTimeLeft = 90 * 60;
+    let timerInterval = null;
+    let isTimerRunning = false;
+
+    function initMockExamSelector() {
+      const selector = document.getElementById('mock-selector');
+      selector.innerHTML = '';
+      mockExamsData.forEach(exam => {
+        const opt = document.createElement('option');
+        opt.value = exam.id;
+        opt.textContent = `[${exam.id}] ${exam.name}`;
+        selector.appendChild(opt);
+      });
+    }
+
+    function loadSelectedMockExam() {
+      playBeep(450, 'sine', 0.06);
+      const selector = document.getElementById('mock-selector');
+      currentMockId = selector.value;
+      const exam = mockExamsData.find(e => e.id === currentMockId) || mockExamsData[0];
+
+      document.getElementById('mock-id-badge').textContent = `MÃ ĐỀ: ${exam.id}`;
+
+      const container = document.getElementById('mock-questions-container');
+      container.innerHTML = `
+        <!-- Câu 1 -->
+        <div class="space-y-3 bg-app-card p-5 sm:p-6 rounded-xl border border-app-border shadow-sm">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-mono font-bold text-sky-400 bg-slate-900 px-3 py-1 rounded-md border border-slate-700">${exam.q1.cdr} • ${exam.q1.score} ĐIỂM</span>
+            <span class="text-xs text-slate-400 font-mono">Đạo đức & Chính sách</span>
+          </div>
+          <h3 class="text-sm sm:text-base font-bold text-white">${exam.q1.title}</h3>
+          <p class="text-xs sm:text-sm text-slate-200 leading-relaxed whitespace-pre-line bg-slate-900 p-4 rounded-lg border border-slate-800">${exam.q1.content}</p>
+          
+          <div class="pt-2">
+            <label class="text-xs text-slate-400 font-mono block mb-1.5 flex items-center justify-between">
+              <span>✍️ BÀI LÀM CỦA THÍ SINH (CÂU 1):</span>
+              <span id="wordcount-q1" class="text-[11px] text-sky-400 font-mono">0 từ</span>
+            </label>
+            <textarea id="ans-q1" oninput="handleAnswerInput('q1')" rows="5" placeholder="Trình bày quan điểm đạo đức, trách nhiệm tổ chức và giải pháp ứng xử chuẩn mực..." class="w-full bg-slate-900 border border-app-border rounded-xl p-3.5 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500 font-sans leading-relaxed"></textarea>
+          </div>
+        </div>
+
+        <!-- Câu 2 -->
+        <div class="space-y-3 bg-app-card p-5 sm:p-6 rounded-xl border border-app-border shadow-sm">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-mono font-bold text-indigo-400 bg-slate-900 px-3 py-1 rounded-md border border-slate-700">${exam.q2.cdr} • ${exam.q2.score} ĐIỂM</span>
+            <span class="text-xs text-slate-400 font-mono">Giải pháp & Thiết kế</span>
+          </div>
+          <h3 class="text-sm sm:text-base font-bold text-white">${exam.q2.title}</h3>
+          <p class="text-xs sm:text-sm text-slate-200 leading-relaxed whitespace-pre-line bg-slate-900 p-4 rounded-lg border border-slate-800">${exam.q2.content}</p>
+          
+          <div class="pt-2">
+            <label class="text-xs text-slate-400 font-mono block mb-1.5 flex items-center justify-between">
+              <span>✍️ BÀI LÀM CỦA THÍ SINH (CÂU 2):</span>
+              <span id="wordcount-q2" class="text-[11px] text-indigo-400 font-mono">0 từ</span>
+            </label>
+            <textarea id="ans-q2" oninput="handleAnswerInput('q2')" rows="6" placeholder="Phân tích cơ chế kỹ thuật, vai trò và quy trình xử lý an ninh hệ thống..." class="w-full bg-slate-900 border border-app-border rounded-xl p-3.5 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-sans leading-relaxed"></textarea>
+          </div>
+        </div>
+
+        <!-- Câu 3 -->
+        <div class="space-y-3 bg-app-card p-5 sm:p-6 rounded-xl border border-app-border shadow-sm">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-mono font-bold text-rose-400 bg-slate-900 px-3 py-1 rounded-md border border-slate-700">${exam.q3.cdr} • ${exam.q3.score} ĐIỂM</span>
+            <span class="text-xs text-slate-400 font-mono">Bài tập Tính toán</span>
+          </div>
+          <h3 class="text-sm sm:text-base font-bold text-white">${exam.q3.title}</h3>
+          <p class="text-xs sm:text-sm text-slate-200 leading-relaxed whitespace-pre-line bg-slate-900 p-4 rounded-lg border border-slate-800">${exam.q3.content}</p>
+          
+          <div class="pt-2">
+            <label class="text-xs text-slate-400 font-mono block mb-1.5 flex items-center justify-between">
+              <span>✍️ BÀI LÀM CỦA THÍ SINH (CÂU 3):</span>
+              <span id="wordcount-q3" class="text-[11px] text-rose-400 font-mono">0 từ</span>
+            </label>
+            <textarea id="ans-q3" oninput="handleAnswerInput('q3')" rows="6" placeholder="Trình bày từng bước tính toán, công thức, đơn vị (Gbps, Mpps, s) và kết luận..." class="w-full bg-slate-900 border border-app-border rounded-xl p-3.5 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-rose-500 font-sans leading-relaxed"></textarea>
+          </div>
+        </div>
+      `;
+
+      ['q1', 'q2', 'q3'].forEach(q => {
+        const saved = localStorage.getItem(`ckc_exam_${currentMockId}_${q}`);
+        if (saved) {
+          const area = document.getElementById(`ans-${q}`);
+          if (area) {
+            area.value = saved;
+            handleAnswerInput(q);
+          }
+        }
+      });
+    }
+
+    function handleAnswerInput(q) {
+      const area = document.getElementById(`ans-${q}`);
+      const text = area.value.trim();
+      const wordCount = text.length > 0 ? text.split(/\s+/).length : 0;
+      document.getElementById(`wordcount-${q}`).textContent = `${wordCount} từ`;
+      localStorage.setItem(`ckc_exam_${currentMockId}_${q}`, area.value);
+    }
+
+    /* 90-MINUTE TIMER CONTROL */
+    function formatExamTime(sec) {
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    function toggleExamTimer() {
+      const btnIcon = document.getElementById('timer-toggle-icon');
+      const btnText = document.getElementById('timer-toggle-text');
+      const timerDisplay = document.getElementById('exam-timer');
+
+      if (!isTimerRunning) {
+        isTimerRunning = true;
+        btnIcon.textContent = '⏸️';
+        btnText.textContent = 'Tạm dừng';
+        playBeep(600, 'triangle', 0.1);
+
+        timerInterval = setInterval(() => {
+          if (examTimeLeft > 0) {
+            examTimeLeft--;
+            timerDisplay.textContent = formatExamTime(examTimeLeft);
+
+            if (examTimeLeft === 300) {
+              playBeep(880, 'sawtooth', 0.5, 0.2);
+              showToast('⚠️ Cảnh báo: Còn đúng 5 phút làm bài!');
+            }
+          } else {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+            playErrorBuzzer();
+            showToast('Hết giờ làm bài 90 phút!');
+            openSubmitModal();
+          }
+        }, 1000);
+      } else {
+        isTimerRunning = false;
+        clearInterval(timerInterval);
+        btnIcon.textContent = '▶️';
+        btnText.textContent = 'Tiếp tục';
+        playBeep(400, 'sine', 0.08);
+      }
+    }
+
+    function resetExamTimer() {
+      clearInterval(timerInterval);
+      isTimerRunning = false;
+      examTimeLeft = 90 * 60;
+      document.getElementById('exam-timer').textContent = "90:00";
+      document.getElementById('timer-toggle-icon').textContent = '▶️';
+      document.getElementById('timer-toggle-text').textContent = 'Bắt đầu tính giờ';
+      playBeep(440, 'sine', 0.08);
+      showToast('Đã làm mới lại đồng hồ 90 phút');
+    }
+
+    /* =======================================================================
+       11. SUBMIT MODAL & SCORING COMPARISON
+    ======================================================================= */
+    function openSubmitModal() {
+      playSuccessChime();
+      const modal = document.getElementById('submit-modal');
+      const exam = mockExamsData.find(e => e.id === currentMockId) || mockExamsData[0];
+
+      document.getElementById('modal-mock-title').textContent = `Mã đề kiểm tra: ${exam.id} • ${exam.name}`;
+
+      const a1 = (document.getElementById('ans-q1')?.value || '').trim();
+      const a2 = (document.getElementById('ans-q2')?.value || '').trim();
+      const a3 = (document.getElementById('ans-q3')?.value || '').trim();
+
+      const totalWords = (a1.length ? a1.split(/\s+/).length : 0) +
+                         (a2.length ? a2.split(/\s+/).length : 0) +
+                         (a3.length ? a3.split(/\s+/).length : 0);
+      
+      const timeSpentSec = (90 * 60) - examTimeLeft;
+      const spentMin = Math.floor(timeSpentSec / 60);
+
+      document.getElementById('modal-word-count').textContent = `${totalWords} từ`;
+      document.getElementById('modal-spent-time').textContent = `${spentMin} phút ${timeSpentSec % 60} giây`;
+
+      const solutionsContainer = document.getElementById('modal-solutions-content');
+      solutionsContainer.innerHTML = `
+        <!-- So sánh Câu 1 -->
+        <div class="p-4 sm:p-5 rounded-xl bg-slate-900 border border-app-border space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-sky-400 font-mono">CÂU 1 (3.0 ĐIỂM) - SO4.2</span>
+            <span class="text-xs text-slate-400 font-mono">Tự chấm: ___ / 3.0đ</span>
+          </div>
+          <div class="text-xs sm:text-sm text-slate-300 font-medium">${exam.q1.content}</div>
+          <div class="p-3.5 bg-app-card rounded-lg border border-slate-700 text-xs sm:text-sm">
+            <span class="text-slate-400 block font-mono mb-1">✍️ Bài làm của bạn:</span>
+            <div class="text-slate-200 italic whitespace-pre-wrap">${a1 || '(Chưa điền câu trả lời)'}</div>
+          </div>
+          <div class="p-4 bg-emerald-950/20 rounded-lg border border-emerald-800/40 text-xs sm:text-sm text-slate-200 leading-relaxed">
+            <span class="text-emerald-400 font-bold font-mono block mb-1">🎯 ĐÁP ÁN CHUẨN CKC:</span>
+            <div>${exam.q1.solution}</div>
+          </div>
+        </div>
+
+        <!-- So sánh Câu 2 -->
+        <div class="p-4 sm:p-5 rounded-xl bg-slate-900 border border-app-border space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-indigo-400 font-mono">CÂU 2 (4.0 ĐIỂM) - SO6.2</span>
+            <span class="text-xs text-slate-400 font-mono">Tự chấm: ___ / 4.0đ</span>
+          </div>
+          <div class="text-xs sm:text-sm text-slate-300 font-medium">${exam.q2.content}</div>
+          <div class="p-3.5 bg-app-card rounded-lg border border-slate-700 text-xs sm:text-sm">
+            <span class="text-slate-400 block font-mono mb-1">✍️ Bài làm của bạn:</span>
+            <div class="text-slate-200 italic whitespace-pre-wrap">${a2 || '(Chưa điền câu trả lời)'}</div>
+          </div>
+          <div class="p-4 bg-emerald-950/20 rounded-lg border border-emerald-800/40 text-xs sm:text-sm text-slate-200 leading-relaxed">
+            <span class="text-emerald-400 font-bold font-mono block mb-1">🎯 ĐÁP ÁN CHUẨN CKC:</span>
+            <div>${exam.q2.solution}</div>
+          </div>
+        </div>
+
+        <!-- So sánh Câu 3 -->
+        <div class="p-4 sm:p-5 rounded-xl bg-slate-900 border border-app-border space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-rose-400 font-mono">CÂU 3 (3.0 ĐIỂM) - SO6.1</span>
+            <span class="text-xs text-slate-400 font-mono">Tự chấm: ___ / 3.0đ</span>
+          </div>
+          <div class="text-xs sm:text-sm text-slate-300 font-medium">${exam.q3.content}</div>
+          <div class="p-3.5 bg-app-card rounded-lg border border-slate-700 text-xs sm:text-sm">
+            <span class="text-slate-400 block font-mono mb-1">✍️ Bài làm của bạn:</span>
+            <div class="text-slate-200 italic whitespace-pre-wrap">${a3 || '(Chưa điền câu trả lời)'}</div>
+          </div>
+          <div class="p-4 bg-emerald-950/20 rounded-lg border border-emerald-800/40 text-xs sm:text-sm text-slate-200 leading-relaxed">
+            <span class="text-emerald-400 font-bold font-mono block mb-1">🎯 ĐÁP ÁN CHUẨN CKC:</span>
+            <div>${exam.q3.solution}</div>
+          </div>
+        </div>
+      `;
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeSubmitModal() {
+      playBeep(400, 'sine', 0.05);
+      document.getElementById('submit-modal').classList.add('hidden');
+    }
+
+    function copyMyAnswers() {
+      const a1 = document.getElementById('ans-q1')?.value || '';
+      const a2 = document.getElementById('ans-q2')?.value || '';
+      const a3 = document.getElementById('ans-q3')?.value || '';
+      const fullText = `=== BÀI LÀM THI THỬ AN NINH MẠNG CKC [${currentMockId}] ===\n\n[CÂU 1 (3đ)]:\n${a1}\n\n[CÂU 2 (4đ)]:\n${a2}\n\n[CÂU 3 (3đ)]:\n${a3}`;
+
+      const tempTextArea = document.createElement('textarea');
+      tempTextArea.value = fullText;
+      document.body.appendChild(tempTextArea);
+      tempTextArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(tempTextArea);
+
+      playSuccessChime();
+      showToast('Đã sao chép toàn bộ bài làm vào Clipboard!');
+    }
+
+    /* =======================================================================
+       12. APPLICATION INITIALIZATION
+    ======================================================================= */
+    window.addEventListener('load', () => {
+      initVerification();
+      initOfficialCountdown();
+      rotateRoastQuotes();
+      renderTheoryQuestions();
+      initMockExamSelector();
+      loadSelectedMockExam();
+
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          closeSubmitModal();
+        }
+      });
+    });
+  </script>
+</body>
+</html>
